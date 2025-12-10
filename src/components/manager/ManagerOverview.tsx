@@ -2,9 +2,10 @@ import { Users, Settings, UserCheck, DollarSign, TrendingUp, Clock } from 'lucid
 
 interface ManagerOverviewProps {
     isDarkMode: boolean;
+    onNavigate?: (section: string) => void;
 }
 
-export function ManagerOverview({ isDarkMode }: ManagerOverviewProps) {
+export function ManagerOverview({ isDarkMode, onNavigate }: ManagerOverviewProps) {
     const stats = [
         {
             title: 'Total Users',
@@ -154,25 +155,25 @@ export function ManagerOverview({ isDarkMode }: ManagerOverviewProps) {
                 <h3 className={`mb-4 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Quick Actions</h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <button className={`p-4 rounded-lg border-2 border-dashed transition-all duration-300 hover:scale-105 ${isDarkMode ? 'border-gray-600 hover:border-red-600 hover:bg-gray-700' : 'border-gray-300 hover:border-red-600 hover:bg-red-50'}`}>
+                    <button onClick={() => onNavigate?.('accounts')} className={`p-4 rounded-lg border-2 border-dashed transition-all duration-300 hover:scale-105 ${isDarkMode ? 'border-gray-600 hover:border-red-600 hover:bg-gray-700' : 'border-gray-300 hover:border-red-600 hover:bg-red-50'}`}>
                         <Users className="w-6 h-6 text-red-600 mb-2" />
                         <div className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Create Account</div>
                         <div className={`text-sm transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Add new user</div>
                     </button>
 
-                    <button className={`p-4 rounded-lg border-2 border-dashed transition-all duration-300 hover:scale-105 ${isDarkMode ? 'border-gray-600 hover:border-red-600 hover:bg-gray-700' : 'border-gray-300 hover:border-red-600 hover:bg-red-50'}`}>
+                    <button onClick={() => onNavigate?.('system-config')} className={`p-4 rounded-lg border-2 border-dashed transition-all duration-300 hover:scale-105 ${isDarkMode ? 'border-gray-600 hover:border-red-600 hover:bg-gray-700' : 'border-gray-300 hover:border-red-600 hover:bg-red-50'}`}>
                         <Settings className="w-6 h-6 text-red-600 mb-2" />
                         <div className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>System Config</div>
                         <div className={`text-sm transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Update settings</div>
                     </button>
 
-                    <button className={`p-4 rounded-lg border-2 border-dashed transition-all duration-300 hover:scale-105 ${isDarkMode ? 'border-gray-600 hover:border-red-600 hover:bg-gray-700' : 'border-gray-300 hover:border-red-600 hover:bg-red-50'}`}>
+                    <button onClick={() => onNavigate?.('accounts')} className={`p-4 rounded-lg border-2 border-dashed transition-all duration-300 hover:scale-105 ${isDarkMode ? 'border-gray-600 hover:border-red-600 hover:bg-gray-700' : 'border-gray-300 hover:border-red-600 hover:bg-red-50'}`}>
                         <UserCheck className="w-6 h-6 text-red-600 mb-2" />
                         <div className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>View Users</div>
                         <div className={`text-sm transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Manage accounts</div>
                     </button>
 
-                    <button className={`p-4 rounded-lg border-2 border-dashed transition-all duration-300 hover:scale-105 ${isDarkMode ? 'border-gray-600 hover:border-red-600 hover:bg-gray-700' : 'border-gray-300 hover:border-red-600 hover:bg-red-50'}`}>
+                    <button onClick={() => onNavigate?.('system-config')} className={`p-4 rounded-lg border-2 border-dashed transition-all duration-300 hover:scale-105 ${isDarkMode ? 'border-gray-600 hover:border-red-600 hover:bg-gray-700' : 'border-gray-300 hover:border-red-600 hover:bg-red-50'}`}>
                         <DollarSign className="w-6 h-6 text-red-600 mb-2" />
                         <div className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Pay Rates</div>
                         <div className={`text-sm transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Adjust rates</div>

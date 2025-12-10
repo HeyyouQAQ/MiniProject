@@ -1,4 +1,4 @@
-import { Bell, User, Menu, Moon, Sun } from 'lucide-react';
+import { Bell, User, Menu, Moon, Sun, MessageCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface ManagerHeaderProps {
@@ -6,9 +6,10 @@ interface ManagerHeaderProps {
   setIsSidebarOpen: (open: boolean) => void;
   isDarkMode: boolean;
   setIsDarkMode: (dark: boolean) => void;
+  setIsChatOpen?: (open: boolean) => void;
 }
 
-export function ManagerHeader({ isSidebarOpen, setIsSidebarOpen, isDarkMode, setIsDarkMode }: ManagerHeaderProps) {
+export function ManagerHeader({ isSidebarOpen, setIsSidebarOpen, isDarkMode, setIsDarkMode, setIsChatOpen }: ManagerHeaderProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -74,9 +75,19 @@ export function ManagerHeader({ isSidebarOpen, setIsSidebarOpen, isDarkMode, set
             </div>
           </button>
           
-          <button className={`relative p-2 rounded-lg transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+          <button
+            className={`relative p-2 rounded-lg transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+          >
             <Bell className={`w-5 h-5 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+          </button>
+
+          <button
+            onClick={() => typeof setIsChatOpen === 'function' ? setIsChatOpen(true) : null}
+            className={`relative p-2 rounded-lg transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+            aria-label="Open chat"
+          >
+            <MessageCircle className={`w-5 h-5 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
           </button>
           
           <div className={`hidden sm:flex items-center gap-3 pl-4 border-l transition-colors duration-500 ${isDarkMode ? 'border-gray-700' : ''}`}>

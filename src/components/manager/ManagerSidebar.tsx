@@ -6,7 +6,7 @@ interface ManagerSidebarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   isDarkMode: boolean;
-  onLogout: () => void;
+  onLogout?: () => void;
 }
 
 export function ManagerSidebar({ activeSection, setActiveSection, isSidebarOpen, setIsSidebarOpen, isDarkMode, onLogout }: ManagerSidebarProps) {
@@ -67,7 +67,7 @@ export function ManagerSidebar({ activeSection, setActiveSection, isSidebarOpen,
 
         <div className={`pt-4 border-t mt-4 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <button
-            onClick={onLogout}
+            onClick={() => onLogout?.()}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 text-left transform hover:scale-105 ${isDarkMode
               ? 'text-gray-300 hover:bg-gray-700 hover:text-red-400'
               : 'text-gray-700 hover:bg-red-50 hover:text-red-600'

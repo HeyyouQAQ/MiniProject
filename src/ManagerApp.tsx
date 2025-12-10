@@ -20,6 +20,10 @@ export default function ManagerApp() {
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
         isDarkMode={isDarkMode}
+        onLogout={() => {
+          // placeholder logout behavior — implement as needed
+          console.log('Logout clicked');
+        }}
       />
       
       {/* Mobile overlay */}
@@ -36,6 +40,7 @@ export default function ManagerApp() {
           setIsSidebarOpen={setIsSidebarOpen}
           isDarkMode={isDarkMode}
           setIsDarkMode={setIsDarkMode}
+          setIsChatOpen={setIsChatOpen}
         />
         
         <main className="flex-1 p-4 md:p-6 lg:p-8">

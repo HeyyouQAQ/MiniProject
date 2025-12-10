@@ -7,7 +7,7 @@ import { AccountCreation as AccountManagement } from './AccountCreation';
 
 interface ManagerDashboardProps {
   isDarkMode: boolean;
-  onLogout: () => void;
+  onLogout?: () => void;
 }
 
 export function ManagerDashboard({ isDarkMode, onLogout }: ManagerDashboardProps) {
@@ -23,7 +23,7 @@ export function ManagerDashboard({ isDarkMode, onLogout }: ManagerDashboardProps
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <ManagerOverview isDarkMode={localIsDarkMode} />;
+        return <ManagerOverview isDarkMode={localIsDarkMode} onNavigate={setActiveSection} />;
       case 'system-config':
         return <SystemConfig isDarkMode={localIsDarkMode} />;
       case 'accounts':
@@ -46,7 +46,7 @@ export function ManagerDashboard({ isDarkMode, onLogout }: ManagerDashboardProps
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
         isDarkMode={localIsDarkMode}
-        onLogout={onLogout}
+        onLogout={onLogout ?? (() => {})}
       />
 
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
