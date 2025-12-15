@@ -233,11 +233,11 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                   };
 
                   try {
-                    await fetchApi('users.php', {
+                    const response = await fetchApi('users.php', {
                       method: 'POST',
                       body: JSON.stringify(userData),
                     });
-                    setSuccessMessage(editingUserId ? 'Updated successfully' : 'Created successfully');
+                    setSuccessMessage(response.message || (editingUserId ? 'Updated successfully' : 'Created successfully'));
                     fetchData();
                     setEditingUserId(null);
                     setViewMode('list');

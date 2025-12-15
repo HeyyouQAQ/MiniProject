@@ -201,8 +201,8 @@ if ($method == 'GET') {
             if ($token) {
                 $link = "http://localhost:3000/MiniProject/?token=" . $token;
                 $emailContent = "To: $email\nSubject: Set your WcDonald's Password\n\nWelcome $name!\n\nPlease click the link below to set your password:\n$link\n\n(Link expires in 24 hours)\n----------------------------------------------------\n\n";
-                // Absolute path for Windows environment
-                $logPath = "c:\\Users\\bii wong\\.gemini\\MiniProject\\simulated_emails.txt";
+                // Write to the repository's simulated_emails.txt so it appears in the workspace
+                $logPath = __DIR__ . '/../../simulated_emails.txt';
                 file_put_contents($logPath, $emailContent, FILE_APPEND);
                 echo json_encode(["status" => "success", "message" => "User created. Invitation sent (simulated).", "id" => $newId]);
             } else {

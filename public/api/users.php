@@ -305,10 +305,23 @@ if ($method == 'GET') {
             if ($token) {
                 $link = "http://localhost:3000/MiniProject/?token=" . $token;
                 $emailContent = "To: $email\nSubject: Set your WcDonald's Password\n\nWelcome $name!\n\nPlease click the link below to set your password:\n$link\n\n(Link expires in 24 hours)\n----------------------------------------------------\n\n";
-                // Relative path for portability (Up from /public/api/ to project root)
+                // Write to the repository's simulated_emails.txt so it appears in the workspace
                 $logPath = __DIR__ . '/../../simulated_emails.txt';
-                file_put_contents($logPath, $emailContent, FILE_APPEND);
-                echo json_encode(["status" => "success", "message" => "User created. Invitation sent (simulated).", "id" => $newId]);
+                $debugLogPath = __DIR__ . '/debug_mail.log';
+                
+                $result = @file_put_contents($logPath, $emailContent, FILE_APPEND);
+                
+                if ($result === false) {
+                    $error = error_get_last();
+                    $debugMsg = date('Y-m-d H:i:s') . " - FAILED to write to $logPath. Error: " . json_encode($error) . "\n";
+                    file_put_contents($debugLogPath, $debugMsg, FILE_APPEND);
+                    // Still return success to frontend but functionality is degraded
+                    echo json_encode(["status" => "success", "message" => "User created, but email simulation failed. Check server logs.", "id" => $newId]);
+                } else {
+                    $debugMsg = date('Y-m-d H:i:s') . " - SUCCESS writing to $logPath. Bytes: $result\n";
+                    file_put_contents($debugLogPath, $debugMsg, FILE_APPEND);
+                    echo json_encode(["status" => "success", "message" => "User created. Email saved to: " . $logPath, "id" => $newId]);
+                }
             } else {
                 echo json_encode(["status" => "success", "message" => "User created successfully.", "id" => $newId]);
             }
