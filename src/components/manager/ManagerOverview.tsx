@@ -1,4 +1,6 @@
-import { Users, Settings, UserCheck, DollarSign, TrendingUp, Clock } from 'lucide-react';
+import { Users, Settings, UserCheck, DollarSign } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { fetchApi } from '../../utils/api';
 
 interface ManagerOverviewProps {
     isDarkMode: boolean;
@@ -6,11 +8,29 @@ interface ManagerOverviewProps {
 }
 
 export function ManagerOverview({ isDarkMode, onNavigate }: ManagerOverviewProps) {
+    const [statsData, setStatsData] = useState<any>(null);
+    const [activitiesData, setActivitiesData] = useState<any[]>([]);
+
+    useEffect(() => {
+        const loadDashboard = async () => {
+            try {
+                const data = await fetchApi('dashboard.php');
+                if (data) {
+                    setStatsData(data.stats);
+                    setActivitiesData(data.activities);
+                }
+            } catch (e) {
+                console.error("Failed to load dashboard data", e);
+            }
+        };
+        loadDashboard();
+    }, []);
+
     const stats = [
         {
             title: 'Total Users',
-            value: '48',
-            change: '+3 this month',
+            value: statsData?.totalUsers || '0',
+            change: '+3 this month', // Mock change for now or calculate if API provides
             icon: Users,
             color: 'bg-blue-50',
             iconColor: 'text-blue-600',
@@ -18,8 +38,8 @@ export function ManagerOverview({ isDarkMode, onNavigate }: ManagerOverviewProps
         },
         {
             title: 'Staff Members',
-            value: '42',
-            change: '87.5% of total',
+            value: statsData?.staffCount || '0',
+            change: statsData ? `${((statsData.staffCount / statsData.totalUsers) * 100).toFixed(1)}% of total` : '-',
             icon: UserCheck,
             color: 'bg-green-50',
             iconColor: 'text-green-600',
@@ -27,8 +47,8 @@ export function ManagerOverview({ isDarkMode, onNavigate }: ManagerOverviewProps
         },
         {
             title: 'HR Personnel',
-            value: '6',
-            change: '12.5% of total',
+            value: statsData?.hrCount || '0',
+            change: statsData ? `${((statsData.hrCount / statsData.totalUsers) * 100).toFixed(1)}% of total` : '-',
             icon: Users,
             color: 'bg-purple-50',
             iconColor: 'text-purple-600',
@@ -36,8 +56,8 @@ export function ManagerOverview({ isDarkMode, onNavigate }: ManagerOverviewProps
         },
         {
             title: 'Base Hourly Rate',
-            value: 'RM 15.00',
-            change: 'System default',
+            value: statsData?.baseSalary === 'N/A' ? 'N/A' : `RM ${statsData?.baseSalary || '0.00'}`,
+            change: 'See Config',
             icon: DollarSign,
             color: 'bg-yellow-50',
             iconColor: 'text-yellow-600',
@@ -45,20 +65,11 @@ export function ManagerOverview({ isDarkMode, onNavigate }: ManagerOverviewProps
         },
     ];
 
-    const recentActivities = [
-        { action: 'Created new staff account', user: 'mike.wilson', time: '2 hours ago', type: 'create' },
-        { action: 'Updated overtime rate', user: 'System Config', time: '5 hours ago', type: 'update' },
-        { action: 'Created HR account', user: 'jane.doe', time: '1 day ago', type: 'create' },
-        { action: 'Updated base salary', user: 'System Config', time: '2 days ago', type: 'update' },
-        { action: 'Deactivated staff account', user: 'sarah.brown', time: '3 days ago', type: 'delete' },
+    const recentActivities = activitiesData.length > 0 ? activitiesData : [
+        // Fallback or empty state could be handled here
     ];
 
-    const systemConfig = [
-        { label: 'Overtime Rate', value: '1.5x', icon: TrendingUp },
-        { label: 'Holiday Rate', value: '2.0x', icon: TrendingUp },
-        { label: 'Working Hours/Day', value: '8 hours', icon: Clock },
-        { label: 'Late Penalty', value: 'RM 5.00', icon: DollarSign },
-    ];
+
 
     return (
         <div className="space-y-6">
@@ -118,36 +129,7 @@ export function ManagerOverview({ isDarkMode, onNavigate }: ManagerOverviewProps
                     </div>
                 </div>
 
-                {/* System Configuration Summary */}
-                <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    <h3 className={`mb-4 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Current System Configuration</h3>
 
-                    <div className="space-y-4">
-                        {systemConfig.map((config, idx) => {
-                            const Icon = config.icon;
-
-                            return (
-                                <div key={idx} className={`flex items-center justify-between p-4 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-red-100 rounded-lg">
-                                            <Icon className="w-4 h-4 text-red-600" />
-                                        </div>
-                                        <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            {config.label}
-                                        </span>
-                                    </div>
-                                    <span className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {config.value}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <button className="w-full mt-4 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors">
-                        Modify Configuration
-                    </button>
-                </div>
             </div>
 
             {/* Quick Actions */}
