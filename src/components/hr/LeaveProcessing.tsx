@@ -72,7 +72,7 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
                                             background: isDarkMode
                                                 ? 'linear-gradient(to right, #16a34a, #15803d)'
                                                 : 'linear-gradient(to right, #22c55e, #16a34a)',
-                                            color: '#ffffff'
+                                            color: '#ffffffff'
                                         }}
                                     >
                                         <Check className="w-4 h-4" /> Approve

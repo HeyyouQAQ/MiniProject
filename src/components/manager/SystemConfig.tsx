@@ -1,271 +1,285 @@
-import { useState } from 'react';
-import { Save, RotateCcw, DollarSign, Clock, Calendar, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, RotateCcw, Clock, Settings } from 'lucide-react';
+import { fetchApi } from '../../utils/api';
 
 interface SystemConfigProps {
   isDarkMode: boolean;
 }
 
 export function SystemConfig({ isDarkMode }: SystemConfigProps) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  // New Config State to match Schema
   const [config, setConfig] = useState({
-    overtimeRate: '1.5',
-    holidayRate: '2.0',
-    baseSalary: '15.00',
-    latePenalty: '5.00',
-    absentPenalty: '50.00',
-    workingHoursPerDay: '8',
-    workingDaysPerWeek: '5',
+    defaultAnnualLeaveDays: '15',
+    payrollCycleDay: '1',
+    qrTokenExportMins: '60',
+    minimumShiftBreakMins: '30',
+    latePenaltyAmount: '5.00'
   });
+
+  const [rules, setRules] = useState<any[]>([]);
+
+  // Fetch config on load
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const data = await fetchApi('config.php');
+        if (data) {
+          if (data.systemConfig) {
+            setConfig({
+              defaultAnnualLeaveDays: data.systemConfig.defaultAnnualLeaveDays || '15',
+              payrollCycleDay: data.systemConfig.payrollCycleDay || '1',
+              qrTokenExportMins: data.systemConfig.qrTokenExportMins || '60',
+              minimumShiftBreakMins: data.systemConfig.minimumShiftBreakMins || '30',
+              latePenaltyAmount: data.systemConfig.latePenaltyAmount || '5.00'
+            });
+          }
+          if (Array.isArray(data.overtimeRules)) {
+            setRules(data.overtimeRules);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadConfig();
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setConfig({ ...config, [field]: value });
   };
 
-  const handleSave = () => {
-    // Save configuration logic
-    alert('Configuration saved successfully!');
+  const handleSave = async () => {
+    try {
+      const result = await fetchApi('config.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          systemConfig: config,
+          overtimeRules: rules
+        })
+      });
+
+      if (result.status === 'error') {
+        throw new Error(result.message);
+      }
+
+      alert('Configuration saved successfully!');
+    } catch (e: any) {
+      console.error(e);
+      alert('Failed to save configuration: ' + e.message);
+    }
   };
 
-  const handleReset = () => {
-    // Reset to default values
-    setConfig({
-      overtimeRate: '1.5',
-      holidayRate: '2.0',
-      baseSalary: '15.00',
-      latePenalty: '5.00',
-      absentPenalty: '50.00',
-      workingHoursPerDay: '8',
-      workingDaysPerWeek: '5',
+  const handleReset = async () => {
+    if (!window.confirm("Are you sure you want to reset all settings to default? This action cannot be undone.")) {
+      return;
+    }
+
+    // Default System Config
+    const defaultSysConfig = {
+      defaultAnnualLeaveDays: '15',
+      payrollCycleDay: '1',
+      qrTokenExportMins: '60',
+      minimumShiftBreakMins: '30',
+      latePenaltyAmount: '5.00'
+    };
+
+    // Default Overtime Rules (Map by ID or Name if possible, here we assume standard set)
+    // We map over existing rules to preserve IDs, resetting values based on known defaults
+    const defaultRules = rules.map(rule => {
+      let factoryRule = { factor: 1.0, requiredHoursTrigger: 8.0 }; // Fallback
+
+      switch (rule.ruleId) { // Using ID as per user provided INSERT statements
+        case '1': // Normal Working Day OT
+        case 1:
+          factoryRule = { factor: 1.50, requiredHoursTrigger: 8.00 };
+          break;
+        case '2': // Rest Day OT (Post-8 Hrs)
+        case 2:
+          factoryRule = { factor: 2.00, requiredHoursTrigger: 8.00 };
+          break;
+        case '3': // Public Holiday OT
+        case 3:
+          factoryRule = { factor: 3.00, requiredHoursTrigger: 8.00 };
+          break;
+        case '4': // PH - Normal Hours Rate
+        case 4:
+          factoryRule = { factor: 2.00, requiredHoursTrigger: 0.00 };
+          break;
+        default:
+          // Keep existing if unknown or standard fallback? 
+          // Let's assume we reset known ones, keep others or reset to 1.0?
+          // For safety, let's keep existing values for unknown rules to avoid breakage
+          return rule;
+      }
+      return { ...rule, ...factoryRule };
     });
+
+    try {
+      // Optimistic Update
+      setConfig(defaultSysConfig);
+      setRules(defaultRules);
+
+      const result = await fetchApi('config.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          systemConfig: defaultSysConfig,
+          overtimeRules: defaultRules
+        })
+      });
+
+      if (result.status === 'error') {
+        throw new Error(result.message);
+      }
+
+      alert('Settings have been reset to defaults.');
+    } catch (e: any) {
+      console.error(e);
+      alert('Failed to reset settings: ' + e.message);
+      // Re-fetch to revert UI? 
+      // Ideally yes, but page refresh works too.
+    }
   };
+
+  if (isLoading) {
+    return <div className="p-8 text-center">Loading settings...</div>;
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>System Configuration</h2>
+        <h2 className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''} text-2xl font-bold`}>System Settings</h2>
         <p className={`text-sm mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          Configure system default values for payroll calculations
+          Configure core HR system parameters
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Pay Rates */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Core Settings */}
         <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="flex items-center gap-2 mb-6">
-            <DollarSign className="w-5 h-5 text-green-600" />
-            <h3 className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Pay Rates</h3>
+            <Settings className="w-5 h-5 text-red-600" />
+            <h3 className={`font-semibold transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>General Settings</h3>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Base Salary (per hour)
+                Default Annual Leave (Days)
               </label>
-              <div className="relative">
-                <span className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  RM
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={config.baseSalary}
-                  onChange={(e) => handleInputChange('baseSalary', e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                />
-              </div>
-              <p className={`text-xs mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Standard hourly rate for regular working hours
-              </p>
+              <input
+                type="number"
+                value={config.defaultAnnualLeaveDays}
+                onChange={(e) => handleInputChange('defaultAnnualLeaveDays', e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+              />
             </div>
 
             <div>
               <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Overtime Rate Multiplier
+                Payroll Cycle Start Day (1-28)
               </label>
-              <div className="relative">
-                <span className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  x
-                </span>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={config.overtimeRate}
-                  onChange={(e) => handleInputChange('overtimeRate', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                />
-              </div>
-              <p className={`text-xs mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Multiplier for overtime hours (e.g., 1.5 = time and a half)
-              </p>
+              <input
+                type="number"
+                min="1" max="28"
+                value={config.payrollCycleDay}
+                onChange={(e) => handleInputChange('payrollCycleDay', e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+              />
             </div>
 
             <div>
               <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Holiday Rate Multiplier
+                Minimum Shift Break (Mins)
               </label>
-              <div className="relative">
-                <span className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  x
-                </span>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={config.holidayRate}
-                  onChange={(e) => handleInputChange('holidayRate', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                />
-              </div>
-              <p className={`text-xs mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Multiplier for holiday hours (e.g., 2.0 = double time)
-              </p>
+              <input
+                type="number"
+                value={config.minimumShiftBreakMins}
+                onChange={(e) => handleInputChange('minimumShiftBreakMins', e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+              />
+            </div>
+
+            <div>
+              <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                QR Token Export (Mins)
+              </label>
+              <input
+                type="number"
+                value={config.qrTokenExportMins}
+                onChange={(e) => handleInputChange('qrTokenExportMins', e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+              />
+            </div>
+
+            <div>
+              <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Late Penalty Amount (RM)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={config.latePenaltyAmount || ''}
+                onChange={(e) => handleInputChange('latePenaltyAmount', e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+              />
             </div>
           </div>
         </div>
 
-        {/* Penalties */}
-        <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <div className="flex items-center gap-2 mb-6">
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
-            <h3 className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Penalties</h3>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Late Arrival Penalty
-              </label>
-              <div className="relative">
-                <span className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  RM
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={config.latePenalty}
-                  onChange={(e) => handleInputChange('latePenalty', e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                />
-              </div>
-              <p className={`text-xs mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Deduction per late clock-in incident
-              </p>
-            </div>
-
-            <div>
-              <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Absence Penalty
-              </label>
-              <div className="relative">
-                <span className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  RM
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={config.absentPenalty}
-                  onChange={(e) => handleInputChange('absentPenalty', e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                />
-              </div>
-              <p className={`text-xs mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Deduction per unexcused absence
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Working Hours */}
+        {/* Overtime Rules (Editable) */}
         <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="flex items-center gap-2 mb-6">
             <Clock className="w-5 h-5 text-blue-600" />
-            <h3 className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Working Hours</h3>
+            <h3 className={`font-semibold transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Overtime Rules</h3>
           </div>
-
           <div className="space-y-4">
-            <div>
-              <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Standard Hours Per Day
-              </label>
-              <input
-                type="number"
-                step="1"
-                value={config.workingHoursPerDay}
-                onChange={(e) => handleInputChange('workingHoursPerDay', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-              />
-              <p className={`text-xs mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Standard working hours before overtime applies
-              </p>
-            </div>
-
-            <div>
-              <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Working Days Per Week
-              </label>
-              <input
-                type="number"
-                step="1"
-                min="1"
-                max="7"
-                value={config.workingDaysPerWeek}
-                onChange={(e) => handleInputChange('workingDaysPerWeek', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-              />
-              <p className={`text-xs mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Standard working days in a week
-              </p>
-            </div>
+            {rules.length === 0 && <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No rules found.</p>}
+            {rules.map((rule: any, index: number) => (
+              <div key={rule.ruleId} className={`p-4 rounded-lg border ${isDarkMode ? 'border-gray-700 bg-gray-700/50' : 'border-gray-200 bg-gray-50'}`}>
+                <div className={`font-medium mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{rule.ruleName}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Factor (Multiplier)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={rule.factor}
+                      onChange={(e) => {
+                        const newRules = [...rules];
+                        newRules[index].factor = parseFloat(e.target.value);
+                        setRules(newRules);
+                      }}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors duration-500 ${isDarkMode ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Trigger After (Hours)</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={rule.requiredHoursTrigger}
+                      onChange={(e) => {
+                        const newRules = [...rules];
+                        newRules[index].requiredHoursTrigger = parseFloat(e.target.value);
+                        setRules(newRules);
+                      }}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors duration-500 ${isDarkMode ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white'}`}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Calculation Preview */}
-        <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800 border-2 border-red-600' : 'bg-white border-2 border-red-100'}`}>
-          <div className="flex items-center gap-2 mb-6">
-            <Calendar className="w-5 h-5 text-red-600" />
-            <h3 className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Calculation Preview</h3>
-          </div>
-
-          <div className="space-y-3">
-            <div className={`p-3 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-              <div className={`text-sm mb-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Regular Hour Rate
-              </div>
-              <div className={`text-xl transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>
-                RM {config.baseSalary}/hour
-              </div>
-            </div>
-
-            <div className={`p-3 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-              <div className={`text-sm mb-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Overtime Hour Rate
-              </div>
-              <div className={`text-xl transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>
-                RM {(parseFloat(config.baseSalary) * parseFloat(config.overtimeRate)).toFixed(2)}/hour
-              </div>
-            </div>
-
-            <div className={`p-3 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-              <div className={`text-sm mb-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Holiday Hour Rate
-              </div>
-              <div className={`text-xl transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>
-                RM {(parseFloat(config.baseSalary) * parseFloat(config.holidayRate)).toFixed(2)}/hour
-              </div>
-            </div>
-
-            <div className={`p-3 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-              <div className={`text-sm mb-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Weekly Base Salary
-              </div>
-              <div className={`text-xl transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>
-                RM {(parseFloat(config.baseSalary) * parseFloat(config.workingHoursPerDay) * parseFloat(config.workingDaysPerWeek)).toFixed(2)}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4 pt-4">
         <button
           onClick={handleSave}
           className="flex items-center justify-center gap-2 bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition-all duration-300 transform hover:scale-105"
