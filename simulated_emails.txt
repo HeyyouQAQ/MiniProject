@@ -1,0 +1,167 @@
+To: biiwong6878@gmail.com
+Subject: Set your WcDonald's Password
+
+Welcome Bii Wong!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=b7a7d02532ae7af385d02d48a28d83ec99703d3c9aba9f6c6fe661b2a5c45f97
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: final@test.com
+Subject: Set your WcDonald's Password
+
+Welcome FinalTest!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=7dc1fe20d63c8ab32483101c28e1ac64a2ae05fd6ed597136ebf472cc5817d74
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: final2@test.com
+Subject: Set your WcDonald's Password
+
+Welcome FinalVerifyUser!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=7fd78091490d73535708e3f5218615e75dccfdf195ce8002b57d5854bfdbf5f2
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: debugverify@test.com
+Subject: Set your WcDonald's Password
+
+Welcome DebugVerifyUser!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=354d9c9fbcfc5cc18a08729e63e1bd55f581b6fa58423f6f36b19dedd4d8a72a
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: synced@test.com
+Subject: Set your WcDonald's Password
+
+Welcome SyncedUser!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=974057e437de9499d8f8f2ef9afd9880f76c096741121f626fc686661402a065
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: firstTest@gmail.com
+Subject: Set your WcDonald's Password
+
+Welcome FirstTest!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=3c6d883303061601e65aa5026544e5329f892097a212d1771d6460f093379f12
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: biiwong10@gmail.com
+Subject: Set your WcDonald's Password
+
+Welcome wong!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=e4cad87801ce1d428e12b0a7ea3eda0c0ff3e699879a252833829887d23f1526
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: biiwww10@gmail.com
+Subject: Set your WcDonald's Password
+
+Welcome uuu!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=ae92ded39073968d60a0cdb5986afffee1839961ca994bfde188570b52faa6fb
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: biiwong10@gmail.com
+Subject: Set your WcDonald's Password
+
+Welcome wong!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=850eb87e0392aebf45db2f356ea837b06200d1c9f01ed13ac79a1c084f496d72
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: wong6878@gmail.com
+Subject: Set your WcDonald's Password
+
+Welcome hhh!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=4347d8cd7ed1aee240eb7f5a31c747a2c4097c61dba9eb34217109f2d243ac36
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: wong6878@gmail.com
+Subject: Set your WcDonald's Password
+
+Welcome wong!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=04fafeb2d22bf39a94493bc5858a821572003eb8d010fbde630ecf04018d8a2b
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: mizimito123@gmail.com
+Subject: Set your WcDonald's Password
+
+Welcome mizimito!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=ae67442aae9240db47188dca5cf1ae1be1a6be6e901e32f1df3cccaf596d6fe4
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: mizimito123@gmail.com
+Subject: Password Reset Request
+
+Hello mizimito,
+
+We received a request to reset your password.
+Click here to reset it:
+http://localhost:3000/MiniProject/?token=10f2d98fb8f375c62d6d25d43b8a2b103c7b4d631128508752bb02d5b9211296
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: mizimito123@gmail.com
+Subject: Password Reset Request
+
+Hello mizimito,
+
+We received a request to reset your password.
+Click here to reset it:
+http://localhost:3000/MiniProject/?token=7421e3b5a641606c99a4400051db0ca1b197d43f95542a8e46af8ad0e93545f2
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: admin@gmail.com
+Subject: Set your WcDonald's Password
+
+Welcome admin!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=407e87553dff902f38cf729be924f96ddb2d98ad099c6b3ea120c8c26fcf077a
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
