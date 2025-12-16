@@ -1,5 +1,33 @@
 <?php
+<<<<<<< HEAD
 require 'db_connect.php';
+=======
+// Suppress PHP errors from being output as HTML
+error_reporting(0);
+ini_set('display_errors', 0);
+
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+try {
+    require 'db_connect.php';
+} catch (Exception $e) {
+    echo json_encode(["status" => "error", "message" => "Database connection failed."]);
+    exit;
+}
+
+if (!isset($conn) || $conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Database connection failed."]);
+    exit;
+}
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -15,6 +43,7 @@ if ($method == 'GET') {
         }
 
         $stmt = $conn->prepare("SELECT PayPeriodStart, PayPeriodEnd, TotalHours, GrossPay, Deductions, NetPay, Status FROM Payroll WHERE UserID = ? ORDER BY PayPeriodEnd DESC");
+<<<<<<< HEAD
         $stmt->bind_param("i", $userId);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -27,6 +56,23 @@ if ($method == 'GET') {
         }
         
         echo json_encode(["status" => "success", "data" => $payrolls]);
+=======
+        if ($stmt) {
+            $stmt->bind_param("i", $userId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            $payrolls = [];
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $payrolls[] = $row;
+                }
+            }
+            echo json_encode(["status" => "success", "data" => $payrolls]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "Query failed."]);
+        }
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 
     } elseif ($action == 'get_all_payrolls') {
         $sql = "SELECT p.*, e.Name, r.Type as RoleName 
@@ -37,7 +83,11 @@ if ($method == 'GET') {
         $result = $conn->query($sql);
         $payrolls = [];
         if ($result) {
+<<<<<<< HEAD
             while($row = $result->fetch_assoc()) {
+=======
+            while ($row = $result->fetch_assoc()) {
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
                 $payrolls[] = $row;
             }
         }
@@ -48,6 +98,7 @@ if ($method == 'GET') {
     }
 } elseif ($method == 'POST') {
     if ($action == 'generate_payroll') {
+<<<<<<< HEAD
         $input = json_decode(file_get_contents('php://input'), true);
         $startDate = $input['startDate'] ?? '';
         $endDate = $input['endDate'] ?? '';
@@ -60,26 +111,76 @@ if ($method == 'GET') {
 
         // Get all employees
         $employeesResult = $conn->query("SELECT UserID, Name, HourlyRate, RoleID FROM Employee");
+=======
+        $rawInput = file_get_contents('php://input');
+        $input = json_decode($rawInput, true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        // Use current month as default if no dates provided
+        $startDate = isset($input['startDate']) && !empty($input['startDate']) ? $input['startDate'] : date('Y-m-01');
+        $endDate = isset($input['endDate']) && !empty($input['endDate']) ? $input['endDate'] : date('Y-m-t');
+
+        // Get all employees (HourlyRate may not exist, so we use a default)
+        $employeesResult = $conn->query("SELECT UserID, Name, RoleID FROM Employee");
+
+        if (!$employeesResult) {
+            echo json_encode(["status" => "error", "message" => "Failed to fetch employees: " . $conn->error]);
+            exit;
+        }
+
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         $employees = [];
         while ($row = $employeesResult->fetch_assoc()) {
             $employees[] = $row;
         }
 
+<<<<<<< HEAD
+=======
+        if (count($employees) == 0) {
+            echo json_encode(["status" => "success", "message" => "No employees found.", "data" => []]);
+            exit;
+        }
+
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         $generatedPayrolls = [];
 
         foreach ($employees as $employee) {
             $userId = $employee['UserID'];
 
+<<<<<<< HEAD
+=======
+            // Get hourly rate from SystemConfiguration or use default
+            $defaultHourlyRate = 15; // Default RM15/hour
+            $rateResult = $conn->query("SELECT DefaultHourlyRate FROM SystemConfiguration LIMIT 1");
+            if ($rateResult && $rateRow = $rateResult->fetch_assoc()) {
+                if (isset($rateRow['DefaultHourlyRate']) && $rateRow['DefaultHourlyRate'] > 0) {
+                    $defaultHourlyRate = floatval($rateRow['DefaultHourlyRate']);
+                }
+            }
+            $hourlyRate = $defaultHourlyRate;
+
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
             // Calculate total hours from attendance (using minutes for precision)
             $hoursStmt = $conn->prepare("SELECT SUM(TIMESTAMPDIFF(MINUTE, ClockInTime, ClockOutTime)) as TotalMinutes 
                                          FROM Attendance 
                                          WHERE UserID = ? AND WorkDate BETWEEN ? AND ? AND ClockInTime IS NOT NULL AND ClockOutTime IS NOT NULL");
+<<<<<<< HEAD
+=======
+
+            if (!$hoursStmt) {
+                continue; // Skip this employee if query fails
+            }
+
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
             $hoursStmt->bind_param("iss", $userId, $startDate, $endDate);
             $hoursStmt->execute();
             $hoursResult = $hoursStmt->get_result()->fetch_assoc();
             $totalMinutes = $hoursResult['TotalMinutes'] ?? 0;
             $totalHours = round($totalMinutes / 60, 2);
 
+<<<<<<< HEAD
             if ($totalHours > 0) {
                 $grossPay = $totalHours * $employee['HourlyRate'];
                 $deductions = 0; // Placeholder for deductions logic
@@ -100,6 +201,30 @@ if ($method == 'GET') {
                     'NetPay' => $netPay
                 ];
             }
+=======
+            // Include employees even with 0 hours
+            $grossPay = $totalHours * $hourlyRate;
+            $deductions = 0;
+            $netPay = $grossPay - $deductions;
+
+            // Get role name
+            $roleName = 'Staff';
+            if (!empty($employee['RoleID'])) {
+                $roleQuery = $conn->query("SELECT Type FROM Role WHERE RoleID = " . intval($employee['RoleID']));
+                if ($roleQuery && $roleRow = $roleQuery->fetch_assoc()) {
+                    $roleName = $roleRow['Type'];
+                }
+            }
+
+            $generatedPayrolls[] = [
+                'Name' => $employee['Name'],
+                'RoleName' => $roleName,
+                'TotalHours' => $totalHours,
+                'GrossPay' => $grossPay,
+                'Deductions' => $deductions,
+                'NetPay' => $netPay
+            ];
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         }
 
         echo json_encode(["status" => "success", "message" => "Payroll generated successfully.", "data" => $generatedPayrolls]);
@@ -113,4 +238,8 @@ if ($method == 'GET') {
 }
 
 $conn->close();
+<<<<<<< HEAD
 ?>
+=======
+?>
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd

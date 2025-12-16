@@ -176,6 +176,7 @@ http://localhost:3000/MiniProject/?token=294c2c3e271b7926d4f0b806f4d6dcca9f50fcd
 (Link expires in 24 hours)
 ----------------------------------------------------
 
+<<<<<<< HEAD
 To: jasmin@gmail.com
 Subject: Set your WcDonald's Password
 
@@ -183,6 +184,15 @@ Welcome Jasmin!
 
 Please click the link below to set your password:
 http://localhost:3000/MiniProject/?token=ced6feea9976dd58126362853ce8ac1bddb0993c1c955756943f72ce4b0d9c39
+=======
+To: johnlee@wcdonald.com
+Subject: Set your WcDonald's Password
+
+Welcome John Lee!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=a082735821bcf0ad72c261400a3304457d88540c02f28f5b5ff4656fca58653f
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 
 (Link expires in 24 hours)
 ----------------------------------------------------

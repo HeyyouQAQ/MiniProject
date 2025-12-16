@@ -10,7 +10,8 @@ if ($method == 'GET') {
     if ($action == 'verify_token') {
         $token = $_GET['token'] ?? '';
         if (empty($token)) {
-             echo json_encode(["valid" => false, "message" => "No token provided"]); exit;
+            echo json_encode(["valid" => false, "message" => "No token provided"]);
+            exit;
         }
 
         $stmt = $conn->prepare("SELECT UserID, ResetExpiry, Name FROM Employee WHERE ResetToken = ?");
@@ -21,20 +22,20 @@ if ($method == 'GET') {
         if ($row = $res->fetch_assoc()) {
             $now = new DateTime();
             $expiry = new DateTime($row['ResetExpiry']);
-            
+
             if ($now > $expiry) {
-                 echo json_encode([
-                     "valid" => false, 
-                     "message" => "Token expired. ServerTime: " . $now->format('Y-m-d H:i:s') . " Expiry: " . $expiry->format('Y-m-d H:i:s')
-                 ]);
+                echo json_encode([
+                    "valid" => false,
+                    "message" => "Token expired. ServerTime: " . $now->format('Y-m-d H:i:s') . " Expiry: " . $expiry->format('Y-m-d H:i:s')
+                ]);
             } else {
-                 echo json_encode(["valid" => true, "userName" => $row['Name']]);
+                echo json_encode(["valid" => true, "userName" => $row['Name']]);
             }
         } else {
-             echo json_encode([
-                 "valid" => false, 
-                 "message" => "Invalid token. Received: " . htmlspecialchars($token)
-             ]);
+            echo json_encode([
+                "valid" => false,
+                "message" => "Invalid token. Received: " . htmlspecialchars($token)
+            ]);
         }
         exit;
 
@@ -44,7 +45,7 @@ if ($method == 'GET') {
         $result = $conn->query($sql);
         $roles = [];
         if ($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
+            while ($row = $result->fetch_assoc()) {
                 $roles[] = $row;
             }
         }
@@ -60,7 +61,7 @@ if ($method == 'GET') {
 
         $employees = [];
         if ($result && $result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
+            while ($row = $result->fetch_assoc()) {
                 $employees[] = [
                     'id' => $row['UserID'],
                     'fullName' => $row['Name'],
@@ -69,22 +70,25 @@ if ($method == 'GET') {
                     'roleId' => $row['RoleID'],
                     'contactNumber' => $row['ContactNumber'],
                     'hiringDate' => $row['HiringDate'],
-                    'status' => 'Active' 
+                    'status' => 'Active'
                 ];
             }
         }
         echo json_encode($employees);
     }
 
-// Handle POST requests (Create, Update, Set Password)
+    // Handle POST requests (Create, Update, Set Password)
 } elseif ($method == 'POST') {
-    
+
     $input = file_get_contents("php://input");
     $data = json_decode($input, true);
-    if (json_last_error() !== JSON_ERROR_NONE) $data = $_POST;
+    if (json_last_error() !== JSON_ERROR_NONE)
+        $data = $_POST;
 
     if (empty($data)) {
-        http_response_code(400); echo json_encode(["status" => "error", "message" => "No data received."]); exit;
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "No data received."]);
+        exit;
     }
 
     $action = $_GET['action'] ?? '';
@@ -95,7 +99,9 @@ if ($method == 'GET') {
         $password = $data['password'] ?? '';
 
         if (empty($username) || empty($password)) {
-            http_response_code(400); echo json_encode(["status" => "error", "message" => "Credentials required"]); exit;
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Credentials required"]);
+            exit;
         }
 
         // Allow login by Name or Email
@@ -111,17 +117,19 @@ if ($method == 'GET') {
             if ($password === $row['PasswordHash']) {
                 echo json_encode([
                     "status" => "success",
-                    "role" => strtolower($row['RoleName']), // 'manager', 'worker', 'hr'
+                    "role" => strtolower($row['RoleName']), // 'manager', 'staff', 'hr'
                     "user" => [
                         "id" => $row['UserID'],
                         "name" => $row['Name']
                     ]
                 ]);
             } else {
-                http_response_code(401); echo json_encode(["status" => "error", "message" => "Invalid password"]);
+                http_response_code(401);
+                echo json_encode(["status" => "error", "message" => "Invalid password"]);
             }
         } else {
-            http_response_code(401); echo json_encode(["status" => "error", "message" => "User not found"]);
+            http_response_code(401);
+            echo json_encode(["status" => "error", "message" => "User not found"]);
         }
         exit;
     }
@@ -131,7 +139,9 @@ if ($method == 'GET') {
         $email = $data['email'] ?? '';
 
         if (empty($email)) {
-            http_response_code(400); echo json_encode(["status" => "error", "message" => "Email required"]); exit;
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Email required"]);
+            exit;
         }
 
         // Check if user exists
@@ -144,7 +154,7 @@ if ($method == 'GET') {
             // Generate Token
             $token = bin2hex(random_bytes(32));
             $resetExpiry = date('Y-m-d H:i:s', strtotime('+24 hours'));
-            
+
             // Update User
             $update = $conn->prepare("UPDATE Employee SET ResetToken = ?, ResetExpiry = ? WHERE UserID = ?");
             $update->bind_param("ssi", $token, $resetExpiry, $row['UserID']);
@@ -168,7 +178,9 @@ if ($method == 'GET') {
         $newPassword = $data['password'] ?? '';
 
         if (empty($token) || empty($newPassword)) {
-            http_response_code(400); echo json_encode(["status" => "error", "message" => "Token and password required"]); exit;
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Token and password required"]);
+            exit;
         }
 
         // Validate Token
@@ -180,22 +192,26 @@ if ($method == 'GET') {
         if ($row = $result->fetch_assoc()) {
             $expiry = new DateTime($row['ResetExpiry']);
             $now = new DateTime();
-            
+
             if ($now > $expiry) {
-                http_response_code(400); echo json_encode(["status" => "error", "message" => "Link expired"]); exit;
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Link expired"]);
+                exit;
             }
 
             // Update Password and Clear Token
             $updateStmt = $conn->prepare("UPDATE Employee SET PasswordHash = ?, ResetToken = NULL, ResetExpiry = NULL WHERE UserID = ?");
             $updateStmt->bind_param("si", $newPassword, $row['UserID']);
-            
+
             if ($updateStmt->execute()) {
                 echo json_encode(["status" => "success", "message" => "Password set successfully"]);
             } else {
-                http_response_code(500); echo json_encode(["status" => "error", "message" => "Failed to update password"]);
+                http_response_code(500);
+                echo json_encode(["status" => "error", "message" => "Failed to update password"]);
             }
         } else {
-            http_response_code(400); echo json_encode(["status" => "error", "message" => "Invalid token"]);
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Invalid token"]);
         }
         exit;
     }
@@ -210,25 +226,28 @@ if ($method == 'GET') {
 
         // If password provided in update
         if (isset($data['password']) && !empty($data['password'])) {
-             $sql = "UPDATE Employee SET Name=?, Email=?, RoleID=?, ContactNumber=?, PasswordHash=? WHERE UserID=?";
-             $stmt = $conn->prepare($sql);
-             $stmt->bind_param("ssissi", $name, $email, $roleId, $contact, $data['password'], $id);
+            $sql = "UPDATE Employee SET Name=?, Email=?, RoleID=?, ContactNumber=?, PasswordHash=? WHERE UserID=?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssissi", $name, $email, $roleId, $contact, $data['password'], $id);
         } else {
-             $sql = "UPDATE Employee SET Name=?, Email=?, RoleID=?, ContactNumber=? WHERE UserID=?";
-             $stmt = $conn->prepare($sql);
-             $stmt->bind_param("ssisi", $name, $email, $roleId, $contact, $id);
+            $sql = "UPDATE Employee SET Name=?, Email=?, RoleID=?, ContactNumber=? WHERE UserID=?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssisi", $name, $email, $roleId, $contact, $id);
         }
-        
+
         if ($stmt->execute()) {
             echo json_encode(["status" => "success", "message" => "Employee updated successfully"]);
         } else {
-            http_response_code(500); echo json_encode(["status" => "error", "message" => "Error updating: " . $conn->error]);
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Error updating: " . $conn->error]);
         }
 
     } else {
         // CREATE NEW EMPLOYEE
         if (empty($data['fullName']) || empty($data['email'])) {
-            http_response_code(400); echo json_encode(["status" => "error", "message" => "Missing required fields."]); exit;
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Missing required fields."]);
+            exit;
         }
 
         $name = $data['fullName'];
@@ -236,13 +255,13 @@ if ($method == 'GET') {
         $roleId = $data['roleId'] ?? 2;
         $contact = $data['contactNumber'] ?? '';
         $hiringDate = $data['hiringDate'] ?? date('Y-m-d');
-        
-        $password = $data['password'] ?? ''; 
-        
+
+        $password = $data['password'] ?? '';
+
         // TOKEN GENERATION LOGIC
         $token = null;
         $resetExpiry = null;
-        
+
         if (empty($password)) {
             // Generate random token
             $token = bin2hex(random_bytes(32));
@@ -255,26 +274,29 @@ if ($method == 'GET') {
         $checkStmt->bind_param("ss", $email, $name);
         $checkStmt->execute();
         if ($checkStmt->get_result()->num_rows > 0) {
-            http_response_code(400); echo json_encode(["status" => "error", "message" => "Email or Username already exists"]); exit;
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Email or Username already exists"]);
+            exit;
         }
 
         // Schema-Aware Insertion
         $columns = [];
         $res = $conn->query("DESCRIBE Employee");
-        while($r = $res->fetch_assoc()) $columns[] = $r['Field'];
+        while ($r = $res->fetch_assoc())
+            $columns[] = $r['Field'];
 
         $insertData = [];
         $types = "";
 
         // Function helper
-        $add = function($cols, $val, $type) use ($columns, &$insertData, &$types) {
-             foreach((array)$cols as $c) {
-                 if(in_array($c, $columns)) {
-                     $insertData[$c] = $val;
-                     $types .= $type;
-                     return;
-                 }
-             }
+        $add = function ($cols, $val, $type) use ($columns, &$insertData, &$types) {
+            foreach ((array) $cols as $c) {
+                if (in_array($c, $columns)) {
+                    $insertData[$c] = $val;
+                    $types .= $type;
+                    return;
+                }
+            }
         };
 
         $add(['Name', 'FullName'], $name, 's');
@@ -283,7 +305,7 @@ if ($method == 'GET') {
         $add(['ContactNumber'], $contact, 's');
         $add(['HiringDate'], $hiringDate, 's');
         $add(['Password', 'PasswordHash'], $password, 's');
-        
+
         // Add Token columns if they exist
         if ($token) {
             $add(['ResetToken'], $token, 's');
@@ -292,15 +314,16 @@ if ($method == 'GET') {
 
         $colsStr = implode(", ", array_keys($insertData));
         $placeholders = implode(", ", array_fill(0, count($insertData), "?"));
-        
+
         $stmt = $conn->prepare("INSERT INTO Employee ($colsStr) VALUES ($placeholders)");
         $refs = [$types];
-        foreach($insertData as $key => $value) $refs[] = &$insertData[$key];
+        foreach ($insertData as $key => $value)
+            $refs[] = &$insertData[$key];
         call_user_func_array([$stmt, 'bind_param'], $refs);
 
         if ($stmt->execute()) {
             $newId = $conn->insert_id;
-            
+
             // SIMULATE EMAIL
             if ($token) {
                 $link = "http://localhost:3000/MiniProject/?token=" . $token;
@@ -313,15 +336,18 @@ if ($method == 'GET') {
                 echo json_encode(["status" => "success", "message" => "User created successfully.", "id" => $newId]);
             }
         } else {
-            http_response_code(500); echo json_encode(["status" => "error", "message" => "Insert failed: " . $stmt->error]);
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Insert failed: " . $stmt->error]);
         }
     }
 
-// Handle DELETE requests
+    // Handle DELETE requests
 } elseif ($method == 'DELETE') {
     $id = $_GET['id'] ?? null;
     if (!$id) {
-        http_response_code(400); echo json_encode(["status" => "error", "message" => "ID required"]); exit;
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "ID required"]);
+        exit;
     }
 
     $stmt = $conn->prepare("DELETE FROM Employee WHERE UserID = ?");
@@ -329,7 +355,8 @@ if ($method == 'GET') {
     if ($stmt->execute()) {
         echo json_encode(["status" => "success", "message" => "Employee deleted successfully"]);
     } else {
-        http_response_code(500); echo json_encode(["status" => "error", "message" => "Delete failed: " . $conn->error]);
+        http_response_code(500);
+        echo json_encode(["status" => "error", "message" => "Delete failed: " . $conn->error]);
     }
 }
 

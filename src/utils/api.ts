@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 export const API_BASE_URL = 'http://localhost:8000/api';
+=======
+// API Base URL - configured via environment variable
+// Copy .env.example to .env and set VITE_API_BASE_URL for your local setup
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/MiniProject/public/api';
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 
 export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
     try {

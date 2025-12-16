@@ -4,13 +4,14 @@ require 'db_connect.php';
 echo "<h2>Seeding Default Users</h2>";
 
 // Helper function to create/update user
-function seedUser($conn, $name, $email, $roleType, $password) {
+function seedUser($conn, $name, $email, $roleType, $password)
+{
     // Get RoleID
     $roleStmt = $conn->prepare("SELECT RoleID FROM Role WHERE Type = ?");
     $roleStmt->bind_param("s", $roleType);
     $roleStmt->execute();
     $roleRes = $roleStmt->get_result();
-    
+
     if ($roleRow = $roleRes->fetch_assoc()) {
         $roleId = $roleRow['RoleID'];
     } else {
@@ -24,7 +25,7 @@ function seedUser($conn, $name, $email, $roleType, $password) {
     $checkStmt = $conn->prepare("SELECT UserID FROM Employee WHERE Email = ? OR Name = ?");
     $checkStmt->bind_param("ss", $email, $name);
     $checkStmt->execute();
-    
+
     // Hash password
     // NOTE: In production, use strong passwords. This is for local dev convenience as requested.
     $validPassword = $password; // "123"
@@ -56,8 +57,8 @@ seedUser($conn, 'admin', 'admin@wcdonald.com', 'Manager', '123');
 $conn->query("INSERT IGNORE INTO Role (Type) VALUES ('HR')");
 seedUser($conn, 'hr', 'hr@wcdonald.com', 'HR', '123');
 
-// Staff -> Worker
-seedUser($conn, 'staff', 'staff@wcdonald.com', 'Worker', '123');
+// Staff -> Staff
+seedUser($conn, 'staff', 'staff@wcdonald.com', 'Staff', '123');
 
 echo "<br><strong>Seeding Completed!</strong>";
 ?>

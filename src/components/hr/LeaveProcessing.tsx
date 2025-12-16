@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Check, X, Calendar, User, Loader2, Paperclip } from 'lucide-react';
+<<<<<<< HEAD
 import { fetchApi } from '../../utils/api';
+=======
+import { fetchApi, API_BASE_URL } from '../../utils/api';
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 
 interface LeaveRequest {
     LeaveID: number;
@@ -75,12 +79,30 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
         ? 'bg-gray-800/60 backdrop-blur-xl border border-gray-700/50'
         : 'bg-white/80 backdrop-blur-xl border border-white/50'}`;
 
+<<<<<<< HEAD
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'Approved': return 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30';
             case 'Rejected': return 'bg-red-100/80 text-red-700 dark:bg-red-500/20 dark:text-red-300 border border-red-200 dark:border-red-500/30';
             default: return 'bg-amber-100/80 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30';
         }
+=======
+
+
+    const getAttachmentUrl = (path: string) => {
+        if (!path) return '#';
+        if (path.startsWith('http')) return path;
+
+        // Robustly join API_BASE_URL and path
+        // API_BASE_URL usually ends with .../public/api
+        // Path usually starts with api/uploads/...
+        // We want .../public/api/uploads/...
+
+        const cleanBase = API_BASE_URL.replace(/\/api\/?$/, ''); // Strip trailing /api
+        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+
+        return `${cleanBase}/${cleanPath}`;
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
     };
 
     return (
@@ -155,8 +177,16 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
                             `}
                         >
                             {req.Status !== 'Pending' && (
+<<<<<<< HEAD
                                 <div className={`absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[2px] ${req.Status === 'Approved' ? 'bg-emerald-500/5' : 'bg-red-500/5'}`}>
                                     <span className={`px-5 py-2.5 rounded-full font-bold uppercase tracking-wider text-sm shadow-lg ${getStatusBadge(req.Status)}`}>
+=======
+                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-gray-900/70 pointer-events-none">
+                                    <span
+                                        className="px-6 py-3 rounded-lg font-semibold uppercase tracking-wide text-sm text-white pointer-events-auto"
+                                        style={{ backgroundColor: req.Status === 'Approved' ? '#16a34a' : '#dc2626' }}
+                                    >
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
                                         {req.Status}
                                     </span>
                                 </div>
@@ -170,7 +200,11 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
                                         </div>
                                         <div>
                                             <h3 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{req.Name}</h3>
+<<<<<<< HEAD
                                             <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-indigo-50 text-indigo-600'}`}>
+=======
+                                            <span className={`text-xs font-bold px-3 py-1 mt-1 inline-block rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-800'}`}>
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
                                                 {req.LeaveType}
                                             </span>
                                         </div>
@@ -187,6 +221,7 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
 
                                 {req.AttachmentPath && (
                                     <a
+<<<<<<< HEAD
                                         href={`http://localhost:8000/${req.AttachmentPath}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
@@ -194,6 +229,15 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
                                     >
                                         <Paperclip className="w-4 h-4" />
                                         View/Download Attachment
+=======
+                                        href={getAttachmentUrl(req.AttachmentPath)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`relative z-20 flex flex-row items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors mb-4 w-fit ${isDarkMode ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+                                    >
+                                        <Paperclip className="w-4 h-4" style={{ flexShrink: 0 }} />
+                                        <span>View/Download Attachment</span>
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
                                     </a>
                                 )}
 
@@ -201,15 +245,24 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
                                     <div className="flex gap-4">
                                         <button
                                             onClick={() => handleAction(req.LeaveID, 'Approved')}
+<<<<<<< HEAD
                                             className="flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 font-bold shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-white"
+=======
+                                            className="flex-1 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 font-semibold hover:opacity-90 active:scale-[0.98] text-white"
+                                            style={{ backgroundColor: '#16a34a' }}
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
                                         >
                                             <Check className="w-5 h-5" /> Approve
                                         </button>
                                         <button
                                             onClick={() => handleAction(req.LeaveID, 'Rejected')}
+<<<<<<< HEAD
                                             className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 font-bold border-2 hover:scale-[1.02] active:scale-[0.98] ${isDarkMode
                                                 ? 'border-gray-600 hover:bg-gray-700/50 text-gray-300'
                                                 : 'border-gray-200 hover:bg-gray-50 text-gray-700 hover:border-gray-300'}`}
+=======
+                                            className="flex-1 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 font-semibold hover:opacity-90 active:scale-[0.98] bg-red-600 hover:bg-red-700 text-white"
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
                                         >
                                             <X className="w-5 h-5" /> Reject
                                         </button>
