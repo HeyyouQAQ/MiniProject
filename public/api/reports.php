@@ -23,6 +23,30 @@ if ($method == 'GET' && $action == 'generate_report') {
         $payrolls[] = $row;
     }
 
+    // Fetch Attendance Data (Restored)
+    $attendanceSql = "SELECT WorkDate, 
+                             SUM(CASE WHEN Status = 'Present' THEN 1 ELSE 0 END) as present,
+                             SUM(CASE WHEN Status = 'On Leave' THEN 1 ELSE 0 END) as on_leave,
+                             SUM(CASE WHEN Status = 'Absent' THEN 1 ELSE 0 END) as absent
+                      FROM Attendance
+                      WHERE MONTH(WorkDate) = ? AND YEAR(WorkDate) = ?
+                      GROUP BY WorkDate";
+    $attStmt = $conn->prepare($attendanceSql);
+    $attStmt->bind_param("ii", $month, $year);
+    $attStmt->execute();
+    $attendanceResult = $attStmt->get_result();
+    $attendance = [];
+    while ($row = $attendanceResult->fetch_assoc()) {
+        // Calculate week number relative to the start of the month
+        $weekNum = "Week " . (intval(date('W', strtotime($row['WorkDate']))) - intval(date('W', strtotime("$year-$month-01"))) + 1);
+        if (!isset($attendance[$weekNum])) {
+            $attendance[$weekNum] = ['name' => $weekNum, 'present' => 0, 'on_leave' => 0, 'absent' => 0];
+        }
+        $attendance[$weekNum]['present'] += $row['present'];
+        $attendance[$weekNum]['on_leave'] += $row['on_leave'];
+        $attendance[$weekNum]['absent'] += $row['absent'];
+    }
+
     // Fetch Leave Data for Trends
     $leaveSql = "SELECT LeaveType, StartDate, EndDate 
                  FROM LeaveApplication 
@@ -107,13 +131,20 @@ if ($method == 'GET' && $action == 'generate_report') {
         exit;
 
     } else { // JSON format
+        // Ensure strictly JSON output
+        header('Content-Type: application/json');
+        error_reporting(0); // Suppress warnings preventing invalid JSON
+        // Add json debug output
+        // echo json_encode(["debug" => "json output"]); // Example debug output, uncomment to use
+
         $totalCost = array_sum(array_column($payrolls, 'NetPay'));
         $totalPresent = array_sum(array_column($attendance, 'present'));
         $totalDays = count($attendance) > 0 ? ($totalPresent + array_sum(array_column($attendance, 'on_leave')) + array_sum(array_column($attendance, 'absent'))) : 1;
 
         $costsPerWeek = [];
+        $weekCount = count($attendance);
         foreach ($attendance as $week => $data) {
-            $costsPerWeek[] = ['name' => $week, 'cost' => $totalCost / count($attendance)];
+            $costsPerWeek[] = ['name' => $week, 'cost' => $weekCount > 0 ? $totalCost / $weekCount : 0];
         }
 
         echo json_encode([
