@@ -29,4 +29,6 @@ function logActivity($conn, $user_id, $action, $target, $type) {
     $stmt->bind_param("isss", $user_id, $action, $target, $type);
     $stmt->execute();
 }
+// Set timezone
+date_default_timezone_set('Asia/Kuala_Lumpur');
 ?>

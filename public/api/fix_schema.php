@@ -1,30 +1,9 @@
--- Role Table
-CREATE TABLE IF NOT EXISTS Role (
-    RoleID INT PRIMARY KEY AUTO_INCREMENT,
-    Type VARCHAR(50) NOT NULL UNIQUE
-);
+<?php
+require 'db_connect.php';
 
--- Insert Default Roles
-INSERT INTO Role (Type) VALUES ('Manager'), ('Worker'), ('HR')
-ON DUPLICATE KEY UPDATE Type=Type; -- Avoids errors on re-run
-
--- Employee Table
-CREATE TABLE IF NOT EXISTS Employee (
-    UserID INT PRIMARY KEY AUTO_INCREMENT,
-    Name VARCHAR(100) NOT NULL,
-    Email VARCHAR(100) UNIQUE NOT NULL,
-    PasswordHash VARCHAR(255),
-    ContactNumber VARCHAR(20),
-    HiringDate DATE,
-    RoleID INT,
-    ResetToken VARCHAR(255) NULL,
-    ResetExpiry DATETIME NULL,
-    HourlyRate DECIMAL(10, 2) DEFAULT 15.00, -- Added for payroll calculation
-    FOREIGN KEY (RoleID) REFERENCES Role(RoleID)
-);
-
--- Attendance Table
-CREATE TABLE IF NOT EXISTS Attendance (
+// --- Attendance ---
+$conn->query("DROP TABLE IF EXISTS Attendance");
+$sql = "CREATE TABLE IF NOT EXISTS Attendance (
     AttendanceID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
     ClockInTime DATETIME,
@@ -35,10 +14,17 @@ CREATE TABLE IF NOT EXISTS Attendance (
     FOREIGN KEY (UserID) REFERENCES Employee(UserID),
     FOREIGN KEY (OverwrittenBy) REFERENCES Employee(UserID),
     UNIQUE KEY (UserID, WorkDate) -- Ensures one record per user per day
-);
+)";
 
--- Leave Application Table
-CREATE TABLE IF NOT EXISTS LeaveApplication (
+if ($conn->query($sql) === TRUE) {
+    echo "Table Attendance recreated successfully.<br>";
+} else {
+    echo "Error creating Attendance: " . $conn->error . "<br>";
+}
+
+// --- LeaveApplication ---
+$conn->query("DROP TABLE IF EXISTS LeaveApplication");
+$sqlLeave = "CREATE TABLE IF NOT EXISTS LeaveApplication (
     LeaveID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
     LeaveType ENUM('Annual', 'Sick', 'Unpaid', 'Other') NOT NULL,
@@ -46,13 +32,19 @@ CREATE TABLE IF NOT EXISTS LeaveApplication (
     EndDate DATE NOT NULL,
     Reason TEXT,
     Status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
-    ReviewedBy INT NULL, -- HR or Manager who reviewed
+    ReviewedBy INT NULL,
     FOREIGN KEY (UserID) REFERENCES Employee(UserID),
     FOREIGN KEY (ReviewedBy) REFERENCES Employee(UserID)
-);
+)";
+if ($conn->query($sqlLeave) === TRUE) {
+    echo "Table LeaveApplication recreated successfully.<br>";
+} else {
+    echo "Error creating LeaveApplication: " . $conn->error . "<br>";
+}
 
--- Payroll Table
-CREATE TABLE IF NOT EXISTS Payroll (
+// --- Payroll ---
+$conn->query("DROP TABLE IF EXISTS Payroll");
+$sqlPayroll = "CREATE TABLE IF NOT EXISTS Payroll (
     PayrollID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
     PayPeriodStart DATE NOT NULL,
@@ -65,15 +57,10 @@ CREATE TABLE IF NOT EXISTS Payroll (
     GeneratedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
     PaidDate DATETIME NULL,
     FOREIGN KEY (UserID) REFERENCES Employee(UserID)
-);
-
--- Activity Log Table
-CREATE TABLE IF NOT EXISTS ActivityLog (
-    LogID INT PRIMARY KEY AUTO_INCREMENT,
-    UserID INT,
-    Action VARCHAR(255) NOT NULL,
-    Target VARCHAR(255),
-    Type VARCHAR(50), -- e.g., 'User', 'System'
-    Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (UserID) REFERENCES Employee(UserID)
-);
+)";
+if ($conn->query($sqlPayroll) === TRUE) {
+    echo "Table Payroll recreated successfully.<br>";
+} else {
+    echo "Error creating Payroll: " . $conn->error . "<br>";
+}
+?>

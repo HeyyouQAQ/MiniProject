@@ -1,4 +1,6 @@
-export const API_BASE_URL = 'http://localhost/MiniProject/public/api';
+// API Base URL - configured via environment variable
+// Copy .env.example to .env and set VITE_API_BASE_URL for your local setup
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/MiniProject/public/api';
 
 export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
     try {
@@ -10,8 +12,18 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
             },
         });
         if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`API Error: ${response.status} - ${errText}`);
+            let errMessage = response.statusText;
+            try {
+                const errData = await response.json();
+                if (errData && errData.message) {
+                    errMessage = errData.message;
+                }
+            } catch (e) {
+                // If JSON parse fails, use text
+                const text = await response.text();
+                if (text) errMessage = text;
+            }
+            throw new Error(errMessage);
         }
         return await response.json();
     } catch (error) {

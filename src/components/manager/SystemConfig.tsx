@@ -15,7 +15,8 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
     payrollCycleDay: '1',
     qrTokenExportMins: '60',
     minimumShiftBreakMins: '30',
-    latePenaltyAmount: '5.00'
+    latePenaltyAmount: '5.00',
+    defaultHourlyRate: '15.00'
   });
 
   const [rules, setRules] = useState<any[]>([]);
@@ -32,7 +33,8 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
               payrollCycleDay: data.systemConfig.payrollCycleDay || '1',
               qrTokenExportMins: data.systemConfig.qrTokenExportMins || '60',
               minimumShiftBreakMins: data.systemConfig.minimumShiftBreakMins || '30',
-              latePenaltyAmount: data.systemConfig.latePenaltyAmount || '5.00'
+              latePenaltyAmount: data.systemConfig.latePenaltyAmount || '5.00',
+              defaultHourlyRate: data.systemConfig.defaultHourlyRate || '15.00'
             });
           }
           if (Array.isArray(data.overtimeRules)) {
@@ -84,7 +86,8 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
       payrollCycleDay: '1',
       qrTokenExportMins: '60',
       minimumShiftBreakMins: '30',
-      latePenaltyAmount: '5.00'
+      latePenaltyAmount: '5.00',
+      defaultHourlyRate: '15.00'
     };
 
     // Default Overtime Rules (Map by ID or Name if possible, here we assume standard set)
@@ -224,6 +227,19 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
                 step="0.01"
                 value={config.latePenaltyAmount || ''}
                 onChange={(e) => handleInputChange('latePenaltyAmount', e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+              />
+            </div>
+
+            <div>
+              <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Default Hourly Rate (RM)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={config.defaultHourlyRate || ''}
+                onChange={(e) => handleInputChange('defaultHourlyRate', e.target.value)}
                 className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
               />
             </div>

@@ -70,7 +70,7 @@ export function Login({ onLogin }: LoginProps) {
             });
 
             if (response.status === 'success') {
-                const apiRole = response.role; // 'manager', 'worker', 'hr'
+                const apiRole = response.role; // 'manager', 'staff', 'hr'
 
                 // Map Backend Role to Frontend Route Role
                 // Frontend App.tsx expects: 'staff' | 'manager' | 'hr'
@@ -78,7 +78,7 @@ export function Login({ onLogin }: LoginProps) {
 
                 if (apiRole === 'manager') appRole = 'manager';
                 else if (apiRole === 'hr') appRole = 'hr';
-                else if (apiRole === 'worker') appRole = 'staff';
+                else if (apiRole === 'staff') appRole = 'staff';
 
                 // You might want to store user info in context/local storage here
                 localStorage.setItem('currentUser', JSON.stringify(response.user));
