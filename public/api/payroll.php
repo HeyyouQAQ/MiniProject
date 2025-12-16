@@ -38,9 +38,26 @@ if ($method == 'GET') {
             exit;
         }
 
-        $stmt = $conn->prepare("SELECT PayPeriodStart, PayPeriodEnd, TotalHours, GrossPay, Deductions, NetPay, Status FROM Payroll WHERE UserID = ? ORDER BY PayPeriodEnd DESC");
+        $month = $_GET['month'] ?? null;
+        $year = $_GET['year'] ?? null;
+
+        $sql = "SELECT PayPeriodStart, PayPeriodEnd, TotalHours, GrossPay, Deductions, NetPay, Status FROM Payroll WHERE UserID = ?";
+
+        $params = [$userId];
+        $types = "i";
+
+        if ($month && $year) {
+            $sql .= " AND MONTH(PayPeriodEnd) = ? AND YEAR(PayPeriodEnd) = ?";
+            $params[] = $month;
+            $params[] = $year;
+            $types .= "ii";
+        }
+
+        $sql .= " ORDER BY PayPeriodEnd DESC";
+
+        $stmt = $conn->prepare($sql);
         if ($stmt) {
-            $stmt->bind_param("i", $userId);
+            $stmt->bind_param($types, ...$params);
             $stmt->execute();
             $result = $stmt->get_result();
 
@@ -118,25 +135,91 @@ if ($method == 'GET') {
             }
             $hourlyRate = $defaultHourlyRate;
 
-            // Calculate total hours from attendance (using minutes for precision)
-            $hoursStmt = $conn->prepare("SELECT SUM(TIMESTAMPDIFF(MINUTE, ClockInTime, ClockOutTime)) as TotalMinutes 
-                                         FROM Attendance 
-                                         WHERE UserID = ? AND WorkDate BETWEEN ? AND ? AND ClockInTime IS NOT NULL AND ClockOutTime IS NOT NULL");
+            // Calculate total hours, OT, and deductions daily
+            $attendanceStmt = $conn->prepare("SELECT WorkDate, ClockInTime, ClockOutTime FROM Attendance WHERE UserID = ? AND WorkDate BETWEEN ? AND ? AND ClockInTime IS NOT NULL AND ClockOutTime IS NOT NULL");
 
-            if (!$hoursStmt) {
-                continue; // Skip this employee if query fails
+            $totalNormalHours = 0;
+            $totalOTHours = 0;
+            $totalLateHours = 0;
+            $totalEarlyHours = 0;
+            $daysPresent = 0;
+
+            // Shift Settings
+            $shiftStartResult = $conn->query("SELECT Value FROM SystemConfiguration WHERE KeyName = 'ShiftStartTime' LIMIT 1");
+            $shiftEndResult = $conn->query("SELECT Value FROM SystemConfiguration WHERE KeyName = 'ShiftEndTime' LIMIT 1");
+            // Defaults as requested: 9am - 6:30pm
+            $shiftStartStr = '09:00:00';
+            $shiftEndStr = '18:30:00';
+
+            if ($attendanceStmt) {
+                $attendanceStmt->bind_param("iss", $userId, $startDate, $endDate);
+                $attendanceStmt->execute();
+                $attResult = $attendanceStmt->get_result();
+
+                while ($row = $attResult->fetch_assoc()) {
+                    $daysPresent++;
+                    $date = $row['WorkDate'];
+                    $clockIn = strtotime($row['ClockInTime']);
+                    $clockOut = strtotime($row['ClockOutTime']);
+
+                    $shiftStart = strtotime("$date $shiftStartStr");
+                    $shiftEnd = strtotime("$date $shiftEndStr");
+
+                    // Late Arrival
+                    if ($clockIn > $shiftStart) {
+                        $totalLateHours += ($clockIn - $shiftStart) / 3600;
+                    }
+
+                    // Early Departure (before shift end)
+                    if ($clockOut < $shiftEnd) {
+                        $totalEarlyHours += ($shiftEnd - $clockOut) / 3600;
+                    }
+
+                    // Overtime (after shift end)
+                    if ($clockOut > $shiftEnd) {
+                        $totalOTHours += ($clockOut - $shiftEnd) / 3600;
+                    }
+
+                    // Actual Worked Hours (Simple duration for record keeping)
+                    $totalNormalHours += ($clockOut - $clockIn) / 3600;
+                }
             }
 
-            $hoursStmt->bind_param("iss", $userId, $startDate, $endDate);
-            $hoursStmt->execute();
-            $hoursResult = $hoursStmt->get_result()->fetch_assoc();
-            $totalMinutes = $hoursResult['TotalMinutes'] ?? 0;
-            $totalHours = round($totalMinutes / 60, 2);
+            // Calculate Totals based on "7 days a week work" expectation
+            // 1. Calculate Expected Days
+            $startDT = new DateTime($startDate);
+            $endDT = new DateTime($endDate);
+            $daysInPeriod = $endDT->diff($startDT)->days + 1;
 
-            // Include employees even with 0 hours
-            $grossPay = $totalHours * $hourlyRate;
-            $deductions = 0;
+            // Expected Daily Hours (9am to 6:30pm = 9.5 hours)
+            $dailyHours = 9.5;
+
+            // Deduct Absences
+            $absentDays = $daysInPeriod - $daysPresent;
+            // Ensure strictly positive (in case of data anomalies)
+            if ($absentDays < 0)
+                $absentDays = 0;
+
+            $absentHours = $absentDays * $dailyHours;
+
+            // Calculations
+            // Gross Pay = (Total Expected Hours * Rate) + (OT * Rate * 1.5)
+            // Expectation: Every day, 9.5 hours.
+            $expectedHours = $daysInPeriod * $dailyHours;
+            $baseGross = $expectedHours * $hourlyRate;
+            $otPay = $totalOTHours * $hourlyRate * 1.5;
+
+            $grossPay = $baseGross + $otPay;
+
+            // Deductions = (Absent + Late + Early) * Rate
+            $deductions = ($absentHours + $totalLateHours + $totalEarlyHours) * $hourlyRate;
+
+            // Net Pay
             $netPay = $grossPay - $deductions;
+
+            // For display: TotalHours = Actual Normal + OT
+            $totalHours = $totalNormalHours + $totalOTHours;
+
 
             // Get role name
             $roleName = 'Staff';
@@ -155,9 +238,34 @@ if ($method == 'GET') {
                 'Deductions' => $deductions,
                 'NetPay' => $netPay
             ];
+
+            // SAVE TO DATABASE
+            // Check if record exists for this period
+            $checkStmt = $conn->prepare("SELECT PayrollID FROM Payroll WHERE UserID = ? AND PayPeriodStart = ? AND PayPeriodEnd = ?");
+            $checkStmt->bind_param("iss", $userId, $startDate, $endDate);
+            $checkStmt->execute();
+            $checkResult = $checkStmt->get_result();
+
+            if ($checkResult->num_rows == 0) {
+                // Insert new record
+                $status = 'Generated';
+                $insertStmt = $conn->prepare("INSERT INTO Payroll (UserID, PayPeriodStart, PayPeriodEnd, TotalHours, GrossPay, Deductions, NetPay, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $insertStmt->bind_param("issdddds", $userId, $startDate, $endDate, $totalHours, $grossPay, $deductions, $netPay, $status);
+                $insertStmt->execute();
+            } else {
+                // Update existing record with recalculations
+                $existing = $checkResult->fetch_assoc();
+                $payrollID = $existing['PayrollID'];
+
+                // Only update if not 'Paid'? Usually yes, but for this project we might want to force update.
+                // Converting numeric values for update
+                $updateStmt = $conn->prepare("UPDATE Payroll SET TotalHours = ?, GrossPay = ?, Deductions = ?, NetPay = ? WHERE PayrollID = ?");
+                $updateStmt->bind_param("ddddi", $totalHours, $grossPay, $deductions, $netPay, $payrollID);
+                $updateStmt->execute();
+            }
         }
 
-        echo json_encode(["status" => "success", "message" => "Payroll generated successfully.", "data" => $generatedPayrolls]);
+        echo json_encode(["status" => "success", "message" => "Payroll generated and saved successfully.", "data" => $generatedPayrolls]);
     } else {
         http_response_code(400);
         echo json_encode(["status" => "error", "message" => "Invalid POST action."]);

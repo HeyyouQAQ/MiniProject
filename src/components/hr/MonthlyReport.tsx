@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Download, Loader2, FileText, TrendingUp, DollarSign, Users } from 'lucide-react';
 import { fetchApi } from '../../utils/api';
@@ -57,6 +57,10 @@ export function MonthlyReport({ isDarkMode }: MonthlyReportProps) {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        handleGenerateReport();
+    }, []);
 
     const cardClass = `rounded-lg shadow-sm p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`;
 
@@ -206,8 +210,8 @@ export function MonthlyReport({ isDarkMode }: MonthlyReportProps) {
                             <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Weekly Attendance Trends
                             </h3>
-                            <div className="h-72">
-                                <ResponsiveContainer width="100%" height="100%">
+                            <div style={{ width: '100%', height: 300 }}>
+                                <ResponsiveContainer>
                                     <BarChart data={reportData.attendance}>
                                         <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
                                         <XAxis dataKey="name" stroke={isDarkMode ? '#9ca3af' : '#6b7280'} fontSize={12} />
@@ -225,8 +229,8 @@ export function MonthlyReport({ isDarkMode }: MonthlyReportProps) {
                             <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Weekly Labour Costs
                             </h3>
-                            <div className="h-72">
-                                <ResponsiveContainer width="100%" height="100%">
+                            <div style={{ width: '100%', height: 300 }}>
+                                <ResponsiveContainer>
                                     <LineChart data={reportData.costs}>
                                         <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
                                         <XAxis dataKey="name" stroke={isDarkMode ? '#9ca3af' : '#6b7280'} fontSize={12} />
@@ -250,8 +254,8 @@ export function MonthlyReport({ isDarkMode }: MonthlyReportProps) {
                             <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Weekly Leave Distribution
                             </h3>
-                            <div className="h-72">
-                                <ResponsiveContainer width="100%" height="100%">
+                            <div style={{ width: '100%', height: 300 }}>
+                                <ResponsiveContainer>
                                     <BarChart data={reportData.leaves}>
                                         <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
                                         <XAxis dataKey="name" stroke={isDarkMode ? '#9ca3af' : '#6b7280'} fontSize={12} />

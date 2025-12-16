@@ -73,11 +73,20 @@ export function ManagerOverview({ isDarkMode, onNavigate }: ManagerOverviewProps
 
     return (
         <div className="space-y-6">
-            <div>
-                <h2 className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Manager Dashboard</h2>
-                <p className={`text-sm mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Overview of system accounts and configuration
-                </p>
+            <div className={`rounded-lg shadow-sm p-6 mb-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: '#dc2626' }}>
+                        <Users className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Manager Dashboard
+                        </h2>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            Overview of system accounts and configuration
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Stats Grid */}
