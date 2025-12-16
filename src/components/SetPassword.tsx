@@ -166,10 +166,25 @@ export function SetPassword() {
                         <button
                             type="submit"
                             disabled={!isFormValid}
-                            className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all shadow-lg transform ${isFormValid
-                                ? 'bg-green-600 text-white hover:bg-green-700 shadow-green-500/30 hover:scale-[1.02] cursor-pointer'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
-                                }`}
+                            className="flex-1 px-4 py-3 rounded-xl font-semibold transition-all shadow-lg transform"
+                            style={{
+                                backgroundColor: isFormValid ? '#16a34a' : '#d1d5db',
+                                color: isFormValid ? '#ffffff' : '#6b7280',
+                                cursor: isFormValid ? 'pointer' : 'not-allowed',
+                                boxShadow: isFormValid ? '0 10px 15px -3px rgba(22, 163, 74, 0.3)' : 'none',
+                            }}
+                            onMouseEnter={(e) => {
+                                if (isFormValid) {
+                                    e.currentTarget.style.backgroundColor = '#15803d';
+                                    e.currentTarget.style.transform = 'scale(1.02)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (isFormValid) {
+                                    e.currentTarget.style.backgroundColor = '#16a34a';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }
+                            }}
                         >
                             Confirm
                         </button>

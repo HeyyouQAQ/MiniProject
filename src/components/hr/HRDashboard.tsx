@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Sidebar, MenuItem } from '../Sidebar';
 import { Header } from '../Header';
-import { DollarSign, Users, BarChart2, Umbrella, Calendar, LayoutDashboard } from 'lucide-react';
+import { DollarSign, Users, BarChart2, Umbrella, Calendar, LayoutDashboard, Clock } from 'lucide-react';
 import { Payroll } from './Payroll';
 import { RoleAssignment } from './RoleAssignment';
 import { MonthlyReport } from './MonthlyReport';
 import { LeaveProcessing } from './LeaveProcessing';
 import { ScheduleGen } from './ScheduleGen';
+import { AttendanceManagement } from './AttendanceManagement';
 
 interface HRDashboardProps {
     onLogout: () => void;
@@ -19,6 +20,7 @@ export function HRDashboard({ onLogout }: HRDashboardProps) {
 
     const menuItems: MenuItem[] = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'attendance', label: 'Attendance', icon: Clock },
         { id: 'payroll', label: 'Generate Payroll', icon: DollarSign },
         { id: 'roles', label: 'Role Assignment', icon: Users },
         { id: 'report', label: 'Monthly Report', icon: BarChart2 },
@@ -85,6 +87,7 @@ export function HRDashboard({ onLogout }: HRDashboardProps) {
                         </div>
                     )}
 
+                    {activeSection === 'attendance' && <AttendanceManagement isDarkMode={isDarkMode} />}
                     {activeSection === 'payroll' && <Payroll isDarkMode={isDarkMode} />}
                     {activeSection === 'roles' && <RoleAssignment isDarkMode={isDarkMode} />}
                     {activeSection === 'report' && <MonthlyReport isDarkMode={isDarkMode} />}

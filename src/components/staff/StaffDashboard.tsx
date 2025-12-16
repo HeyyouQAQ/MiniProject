@@ -1,14 +1,170 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar, MenuItem } from '../Sidebar';
 import { Header } from '../Header';
 import { Schedule } from '../Schedule';
 import { StatsCards } from '../StatsCards';
 import { ChatBot } from '../ChatBot';
-import { Clock, Bell, MessageCircle, DollarSign, StickyNote, Umbrella, LayoutDashboard } from 'lucide-react';
+import { Clock, Bell, MessageCircle, DollarSign, Umbrella, LayoutDashboard } from 'lucide-react';
+import { fetchApi } from '../../utils/api';
+import { LeaveApplication } from './LeaveApplication';
+import { Payroll } from './Payroll';
 
 interface StaffDashboardProps {
     onLogout: () => void;
 }
+
+interface AttendanceStatus {
+    status: 'clocked-out' | 'clocked-in';
+    lastClockIn: string | null;
+    lastClockOut: string | null;
+    todaysHours: string;
+}
+
+const ClockInSection = ({ isDarkMode }: { isDarkMode: boolean }) => {
+    const [time, setTime] = useState(new Date());
+    const [attendance, setAttendance] = useState<AttendanceStatus | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [cooldown, setCooldown] = useState(0);
+
+    const fetchAttendance = async () => {
+        try {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (!user.id) {
+                setError("User not found. Please log in again.");
+                setIsLoading(false);
+                return;
+            }
+            const response = await fetchApi(`attendance.php?action=status&userId=${user.id}`);
+            if (response.status === 'success') {
+                setAttendance(response.data);
+            } else {
+                setError(response.message || 'Failed to fetch attendance status.');
+            }
+        } catch (err: any) {
+            setError(err.message || "Connection error.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchAttendance();
+        const timer = setInterval(() => setTime(new Date()), 1000);
+
+        let cooldownTimer: NodeJS.Timeout;
+        if (cooldown > 0) {
+            cooldownTimer = setInterval(() => {
+                setCooldown(prev => prev - 1);
+            }, 1000);
+        }
+
+        return () => {
+            clearInterval(timer);
+            if (cooldownTimer) clearInterval(cooldownTimer);
+        };
+    }, [cooldown]);
+
+    const handleClockInOut = async (actionType: 'clock_in' | 'clock_out') => {
+        setIsLoading(true);
+        setError('');
+        try {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const response = await fetchApi('attendance.php?action=' + actionType, {
+                method: 'POST',
+                body: JSON.stringify({ userId: user.id }),
+            });
+
+            if (response.status === 'success') {
+                await fetchAttendance(); // Refresh data
+                // Start cooldown only after clocking in
+                if (actionType === 'clock_in') {
+                    setCooldown(60);
+                }
+            } else {
+                setError(response.message || `Failed to ${actionType.replace('_', ' ')}.`);
+            }
+        } catch (err: any) {
+            setError(err.message || "Connection error.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="max-w-2xl mx-auto">
+            <h2 className={`mb-6 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Clock In / Out</h2>
+            <div className={`rounded-lg shadow-sm p-6 md:p-8 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">{error}</div>}
+                <div className="text-center space-y-6">
+                    <div className="text-6xl">🕖</div>
+                    <div className={`text-3xl md:text-4xl tabular-nums transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>
+                        {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </div>
+                    {/* Single Button with color states */}
+                    {(() => {
+                        const isClockedIn = attendance?.status === 'clocked-in';
+                        const isInCooldown = cooldown > 0;
+
+                        let bgColor = '';
+                        let hoverBg = '';
+                        let buttonText = '';
+                        let isDisabled = isLoading;
+                        let onClick = () => { };
+
+                        if (isLoading) {
+                            bgColor = '#6b7280';
+                            buttonText = 'Processing...';
+                            isDisabled = true;
+                        } else if (isInCooldown) {
+                            bgColor = '#6b7280';
+                            buttonText = `${cooldown}s`;
+                            isDisabled = true;
+                        } else if (!isClockedIn) {
+                            bgColor = '#dc2626';
+                            hoverBg = '#b91c1c';
+                            buttonText = 'Clock In';
+                            onClick = () => handleClockInOut('clock_in');
+                        } else {
+                            bgColor = '#16a34a';
+                            hoverBg = '#15803d';
+                            buttonText = 'Clock Out';
+                            onClick = () => handleClockInOut('clock_out');
+                        }
+
+                        return (
+                            <button
+                                onClick={onClick}
+                                disabled={isDisabled}
+                                onMouseEnter={(e) => { if (hoverBg && !isDisabled) e.currentTarget.style.backgroundColor = hoverBg; }}
+                                onMouseLeave={(e) => { if (hoverBg && !isDisabled) e.currentTarget.style.backgroundColor = bgColor; }}
+                                style={{ backgroundColor: bgColor }}
+                                className={`w-full px-8 py-4 rounded-lg transition-all duration-300 text-lg font-bold text-white border-0 outline-none shadow-lg ${isDisabled ? 'opacity-80 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98] cursor-pointer'}`}
+                            >
+                                {buttonText}
+                            </button>
+                        );
+                    })()}
+                    <div className={`pt-6 border-t space-y-3 transition-colors duration-500 ${isDarkMode ? 'border-gray-700' : ''}`}>
+                        <div className="flex justify-between">
+                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Last Clock In:</span>
+                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-200' : ''}`}>{attendance?.lastClockIn || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Last Clock Out:</span>
+                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-200' : ''}`}>{attendance?.lastClockOut || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Today's Hours:</span>
+                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-200' : ''}`}>{attendance?.todaysHours || '0h 00m'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 export function StaffDashboard({ onLogout }: StaffDashboardProps) {
     const [activeSection, setActiveSection] = useState('dashboard');
@@ -18,11 +174,10 @@ export function StaffDashboard({ onLogout }: StaffDashboardProps) {
 
     const menuItems: MenuItem[] = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'clock-in', label: 'Clock In', icon: Clock },
+        { id: 'clock-in', label: 'Clock In/Out', icon: Clock },
+        { id: 'payroll', label: 'Payroll', icon: DollarSign },
         { id: 'announcement', label: 'Announcement', icon: Bell },
         { id: 'chats', label: 'Chats @ Schedule', icon: MessageCircle },
-        { id: 'salary', label: 'Salary', icon: DollarSign },
-        { id: 'notes', label: 'Notes', icon: StickyNote },
         { id: 'leave', label: 'Leave', icon: Umbrella },
     ];
 
@@ -63,36 +218,9 @@ export function StaffDashboard({ onLogout }: StaffDashboardProps) {
                         </div>
                     )}
 
-                    {activeSection === 'clock-in' && (
-                        <div className="max-w-2xl mx-auto">
-                            <h2 className={`mb-6 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Clock In / Out</h2>
-                            <div className={`rounded-lg shadow-sm p-6 md:p-8 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                <div className="text-center space-y-6">
-                                    <div className="text-6xl">🕐</div>
-                                    <div className={`text-3xl md:text-4xl tabular-nums transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>
-                                        {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                    </div>
-                                    <button className="w-full bg-red-600 text-white px-8 py-4 rounded-lg hover:bg-red-700 transition-colors text-lg">
-                                        Clock In Now
-                                    </button>
-                                    <div className={`pt-6 border-t space-y-3 transition-colors duration-500 ${isDarkMode ? 'border-gray-700' : ''}`}>
-                                        <div className="flex justify-between">
-                                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Last Clock In:</span>
-                                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-200' : ''}`}>08:00 AM</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Last Clock Out:</span>
-                                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-200' : ''}`}>05:00 PM</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Today&apos;s Hours:</span>
-                                            <span className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-200' : ''}`}>0h 00m</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {activeSection === 'clock-in' && <ClockInSection isDarkMode={isDarkMode} />}
+
+                    {activeSection === 'payroll' && <Payroll isDarkMode={isDarkMode} />}
 
                     {activeSection === 'announcement' && (
                         <div>
@@ -124,125 +252,9 @@ export function StaffDashboard({ onLogout }: StaffDashboardProps) {
                         </div>
                     )}
 
-                    {activeSection === 'salary' && (
-                        <div>
-                            <h2 className={`mb-6 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Payroll</h2>
-                            <div className="space-y-6">
-                                <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                    <h3 className={`mb-4 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Current Pay Period</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className={`p-4 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                                            <div className={`mb-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Regular Hours</div>
-                                            <div className={`text-2xl transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>38.5</div>
-                                        </div>
-                                        <div className={`p-4 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                                            <div className={`mb-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Overtime Hours</div>
-                                            <div className={`text-2xl transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>2.5</div>
-                                        </div>
-                                        <div className={`p-4 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-red-900 bg-opacity-30' : 'bg-red-50'}`}>
-                                            <div className={`mb-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Estimated Pay</div>
-                                            <div className="text-2xl text-red-600">RM 892.50</div>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                    <h3 className={`mb-4 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Recent Pay Stubs</h3>
-                                    <div className="space-y-3">
-                                        {[
-                                            { period: 'Nov 16 - Nov 30, 2025', hours: '42.0', amount: 'RM 945.00' },
-                                            { period: 'Nov 1 - Nov 15, 2025', hours: '40.0', amount: 'RM 880.00' },
-                                            { period: 'Oct 16 - Oct 31, 2025', hours: '38.5', amount: 'RM 847.00' },
-                                        ].map((stub, idx) => (
-                                            <div key={idx} className={`flex justify-between items-center p-4 border rounded-lg transition-colors duration-500 ${isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
-                                                <div>
-                                                    <div className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>{stub.period}</div>
-                                                    <div className={`text-sm transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{stub.hours} hours</div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>{stub.amount}</div>
-                                                    <button className="text-sm text-red-600 hover:underline">View Details</button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
-                    {activeSection === 'notes' && (
-                        <div>
-                            <h2 className={`mb-6 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Notes</h2>
-                            <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                <textarea
-                                    className={`w-full h-64 p-4 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : ''}`}
-                                    placeholder="Write your notes here..."
-                                    defaultValue="Remember to check inventory before opening shift..."
-                                />
-                                <button className="mt-4 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                                    Save Notes
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSection === 'leave' && (
-                        <div className="max-w-2xl mx-auto">
-                            <h2 className={`mb-6 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Leave Application</h2>
-                            <div className={`rounded-lg shadow-sm p-4 md:p-6 mb-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                <form className="space-y-4">
-                                    <div>
-                                        <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Leave Type</label>
-                                        <select className={`w-full p-3 md:p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}>
-                                            <option>Sick Leave</option>
-                                            <option>Vacation</option>
-                                            <option>Personal Leave</option>
-                                            <option>Emergency Leave</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Start Date</label>
-                                            <input type="date" className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
-                                        </div>
-                                        <div>
-                                            <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>End Date</label>
-                                            <input type="date" className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className={`block mb-2 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Reason</label>
-                                        <textarea
-                                            className={`w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500 text-base transition-colors duration-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : ''}`}
-                                            rows={4}
-                                            placeholder="Please provide a brief reason for your leave request..."
-                                        />
-                                    </div>
-
-                                    <button type="submit" className="w-full bg-red-600 text-white px-6 py-4 rounded-lg hover:bg-red-700 transition-colors text-lg">
-                                        Submit Leave Request
-                                    </button>
-                                </form>
-                            </div>
-
-                            <div className={`rounded-lg shadow-sm p-4 md:p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                <h3 className={`mb-4 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Leave Balance</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className={`p-4 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                                        <div className={`mb-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Sick Leave</div>
-                                        <div className={`text-2xl transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>5 days</div>
-                                    </div>
-                                    <div className={`p-4 rounded-lg transition-colors duration-500 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                                        <div className={`mb-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Vacation</div>
-                                        <div className={`text-2xl transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>12 days</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {activeSection === 'leave' && <LeaveApplication isDarkMode={isDarkMode} />}
                 </main>
             </div>
 
@@ -250,3 +262,4 @@ export function StaffDashboard({ onLogout }: StaffDashboardProps) {
         </div>
     );
 }
+

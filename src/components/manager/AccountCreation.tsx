@@ -9,17 +9,15 @@ interface AccountManagementProps {
 export function AccountCreation({ isDarkMode }: AccountManagementProps) {
   const [viewMode, setViewMode] = useState<'list' | 'create'>('list');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Form state
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [roleId, setRoleId] = useState<string>(''); // Using RoleID
+  const [roleId, setRoleId] = useState<string>('');
   const [contactNumber, setContactNumber] = useState('');
   const [hiringDate, setHiringDate] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   // Data state
@@ -47,47 +45,80 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
     fetchData();
   }, []);
 
-
   const filteredUsers = users.filter(user =>
     user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.role && user.role.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Generate username from full name
+  const generateUsername = (name: string) => {
+    return name.toLowerCase().replace(/\s+/g, '.');
+  };
+
+  // Format date for display
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Get role badge style
+  const getRoleBadgeStyle = (role: string) => {
+    const roleLower = role?.toLowerCase() || '';
+    if (roleLower === 'hr' || roleLower === 'human resource') {
+      return {
+        backgroundColor: isDarkMode ? 'rgba(251, 191, 36, 0.2)' : '#fef3c7',
+        color: isDarkMode ? '#fcd34d' : '#b45309',
+        borderColor: isDarkMode ? '#f59e0b' : '#fcd34d',
+      };
+    }
+    return {
+      backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe',
+      color: isDarkMode ? '#93c5fd' : '#1d4ed8',
+      borderColor: isDarkMode ? '#3b82f6' : '#bfdbfe',
+    };
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header - Updated to match image style */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className={`text-2xl font-bold transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Employee Management</h2>
-          <p className={`text-sm mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Manage employee records and roles
+          <h2 className={`text-2xl font-bold transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            Account Management
+          </h2>
+          <p className={`text-sm mt-1 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            Create and manage user accounts for HR and Staff
           </p>
         </div>
         {viewMode === 'list' && (
           <button
             onClick={() => {
               setEditingUserId(null);
-              setFullName(''); setEmail(''); setRoleId(''); setContactNumber(''); setHiringDate(new Date().toISOString().split('T')[0]);
-              setPassword(''); setConfirmPassword('');
+              setFullName(''); setEmail(''); setRoleId(''); setContactNumber('');
+              setHiringDate(new Date().toISOString().split('T')[0]);
+              setPassword('');
               setViewMode('create');
             }}
             className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg font-semibold"
           >
             <UserPlus className="w-5 h-5" />
-            Add Employee
+            Create New Account
           </button>
         )}
       </div>
 
+      {/* Create/Edit Form */}
       {viewMode === 'create' ? (
         <div className={`rounded-xl shadow-lg p-8 transition-colors duration-500 border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
           <h3 className={`text-lg font-bold mb-6 transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {editingUserId ? 'Edit Employee' : 'New Employee Onboarding'}
+            {editingUserId ? 'Edit User Account' : 'Create New User Account'}
           </h3>
 
           <form className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Full Name */}
               <div className="space-y-2">
                 <label className={`block text-sm font-medium transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   Full Name <span className="text-red-500">*</span>
@@ -97,20 +128,21 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                   placeholder="Enter full name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900'}`}
                 />
               </div>
 
+              {/* Email */}
               <div className="space-y-2">
                 <label className={`block text-sm font-medium transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
-                  placeholder="employee@wcdonald.com"
+                  placeholder="user@wcdonald.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900'}`}
                 />
               </div>
 
@@ -121,10 +153,10 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                 </label>
                 <input
                   type="text"
-                  placeholder="+1 234 567 890"
+                  placeholder="+60 123 456 789"
                   value={contactNumber}
                   onChange={(e) => setContactNumber(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900'}`}
                 />
               </div>
 
@@ -137,10 +169,11 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                   type="date"
                   value={hiringDate}
                   onChange={(e) => setHiringDate(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
                 />
               </div>
 
+              {/* Role */}
               <div className="space-y-2">
                 <label className={`block text-sm font-medium transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   Role <span className="text-red-500">*</span>
@@ -148,7 +181,8 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                 <select
                   value={roleId}
                   onChange={(e) => setRoleId(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}>
+                  className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                >
                   <option value="">Select Role</option>
                   {roles.map(r => (
                     <option key={r.RoleID} value={r.RoleID}>{r.Type}</option>
@@ -156,7 +190,7 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                 </select>
               </div>
 
-              {/* Password - Only show when EDITING to allow manual reset */}
+              {/* Password - Only show when EDITING */}
               {editingUserId && (
                 <div className="space-y-2">
                   <label className={`block text-sm font-medium transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -168,7 +202,7 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                       placeholder="Leave blank to keep current"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className={`w-full px-4 py-3 pr-12 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                      className={`w-full px-4 py-3 pr-12 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900'}`}
                     />
                     <button
                       type="button"
@@ -180,42 +214,19 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                   </div>
                 </div>
               )}
-
-              {/* Invitation Note for New Users */}
-              {!editingUserId && (
-                <div className="col-span-full bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <span className="text-blue-500 text-xl">ℹ</span>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-blue-700">
-                        <strong>No password required now.</strong> An invitation email will be sent to the user with a secure link to set their own password.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
             </div>
 
-            <div className="flex gap-4 pt-6 mt-8 border-t border-gray-100 dark:border-gray-700">
+            {/* Action Buttons */}
+            <div className="flex gap-4 pt-6 mt-4 border-t border-gray-100 dark:border-gray-700">
               <button
                 type="submit"
                 onClick={async (e) => {
                   e.preventDefault();
 
-                  // Validation
-                  if (!editingUserId && password !== confirmPassword) {
-                    alert("Passwords do not match"); return;
-                  }
-
-                  // Password Strength Check (Only if password is being set)
                   if (password) {
                     const hasMinLength = password.length >= 8;
                     const hasNumber = /\d/.test(password);
                     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
                     if (!hasMinLength || !hasNumber || !hasSpecialChar) {
                       alert("Password must be at least 8 characters long and include numbers and special characters.");
                       return;
@@ -237,7 +248,7 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                       method: 'POST',
                       body: JSON.stringify(userData),
                     });
-                    setSuccessMessage(editingUserId ? 'Updated successfully' : 'Created successfully');
+                    setSuccessMessage(editingUserId ? 'Account updated successfully' : 'Account created successfully');
                     fetchData();
                     setEditingUserId(null);
                     setViewMode('list');
@@ -248,7 +259,7 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                 }}
                 className="flex-1 sm:flex-none sm:w-48 bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-all duration-300 transform hover:scale-[1.02] shadow-lg shadow-red-500/30 font-semibold"
               >
-                {editingUserId ? 'Save Changes' : 'Create Employee'}
+                {editingUserId ? 'Save Changes' : 'Create Account'}
               </button>
               <button
                 type="button"
@@ -261,60 +272,118 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
           </form>
         </div>
       ) : (
+        /* User Accounts List - Updated styling to match image */
         <div className={`rounded-xl shadow-lg transition-colors duration-500 border overflow-hidden ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+          {/* List Header */}
           <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h3 className={`text-lg font-bold transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Directory</h3>
+              <h3 className={`text-lg font-bold transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                User Accounts
+              </h3>
               <div className="relative w-full sm:w-72">
-                <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
-                <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-10 pr-10 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900'}`} />
+                <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all duration-300 ${isDarkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+                />
               </div>
             </div>
           </div>
 
+          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className={`transition-colors duration-500 ${isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50/80'}`}>
                 <tr>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Name / Email</th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Role</th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Contact</th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Hiring Date</th>
-                  <th className={`px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Actions</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>User</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Role</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Contact</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Created</th>
+                  <th className={`px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y transition-colors duration-500 ${isDarkMode ? 'divide-gray-700' : 'divide-gray-100'}`}>
+              <tbody className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-100'}`}>
                 {filteredUsers.map((user) => (
-                  <tr key={user.id} className={`group transition-colors duration-300 ${isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-red-50/30'}`}>
+                  <tr key={user.id} className={`group transition-colors duration-300 ${isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}`}>
+                    {/* User Info - Updated to match image style */}
                     <td className="px-6 py-4">
                       <div>
                         <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{user.fullName}</div>
-                        <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{user.email}</div>
+                        <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>@{generateUsername(user.fullName)}</div>
+                        <div className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{user.email}</div>
                       </div>
                     </td>
+
+                    {/* Role Badge */}
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${isDarkMode ? 'bg-blue-900/30 text-blue-400 border-blue-800' : 'bg-blue-100 text-blue-700 border-blue-200'}`}>
+                      <span
+                        className="inline-flex px-3 py-1 text-xs font-semibold rounded-full border"
+                        style={getRoleBadgeStyle(user.role)}
+                      >
                         {user.role}
                       </span>
                     </td>
-                    <td className={`px-6 py-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{user.contactNumber}</td>
-                    <td className={`px-6 py-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{user.hiringDate}</td>
+
+                    {/* Contact */}
+                    <td className={`px-6 py-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {user.contactNumber || '-'}
+                    </td>
+
+                    {/* Created Date */}
+                    <td className={`px-6 py-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {formatDate(user.hiringDate)}
+                    </td>
+
+                    {/* Actions */}
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => {
-                          setEditingUserId(user.id);
-                          setFullName(user.fullName);
-                          setEmail(user.email);
-                          setRoleId(user.roleId);
-                          setContactNumber(user.contactNumber);
-                          setHiringDate(user.hiringDate);
-                          setViewMode('create');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }} className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${isDarkMode ? 'hover:bg-blue-900/50 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}>
+                        <button
+                          onClick={() => {
+                            setEditingUserId(user.id);
+                            setFullName(user.fullName);
+                            setEmail(user.email);
+                            setRoleId(user.roleId);
+                            setContactNumber(user.contactNumber);
+                            setHiringDate(user.hiringDate);
+                            setPassword('');
+                            setViewMode('create');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="p-2 rounded-lg transition-all duration-300 hover:scale-110"
+                          style={{
+                            backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                            color: isDarkMode ? '#60a5fa' : '#6b7280',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = isDarkMode ? 'rgba(59, 130, 246, 0.3)' : '#eff6ff';
+                            e.currentTarget.style.color = isDarkMode ? '#93c5fd' : '#2563eb';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = isDarkMode ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+                            e.currentTarget.style.color = isDarkMode ? '#60a5fa' : '#6b7280';
+                          }}
+                        >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => setDeleteConfirmation({ id: user.id, name: user.fullName })} className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${isDarkMode ? 'hover:bg-red-900/50 text-red-400' : 'hover:bg-red-50 text-red-600'}`}>
+                        <button
+                          onClick={() => setDeleteConfirmation({ id: user.id, name: user.fullName })}
+                          className="p-2 rounded-lg transition-all duration-300 hover:scale-110"
+                          style={{
+                            backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+                            color: isDarkMode ? '#f87171' : '#6b7280',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = isDarkMode ? 'rgba(239, 68, 68, 0.3)' : '#fef2f2';
+                            e.currentTarget.style.color = isDarkMode ? '#fca5a5' : '#dc2626';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = isDarkMode ? 'rgba(239, 68, 68, 0.15)' : 'transparent';
+                            e.currentTarget.style.color = isDarkMode ? '#f87171' : '#6b7280';
+                          }}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -326,16 +395,18 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
           </div>
         </div>
       )}
+
+      {/* Success Toast */}
       {successMessage && (
         <div className="fixed right-6 bottom-6 z-50">
           <div className="bg-emerald-600 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+            <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
             {successMessage}
           </div>
         </div>
       )}
 
-      {/* Custom Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {deleteConfirmation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className={`w-full max-w-md p-6 rounded-2xl shadow-xl transform transition-all scale-100 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
@@ -355,7 +426,7 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                     try {
                       await fetchApi(`users.php?id=${deleteConfirmation.id}`, { method: 'DELETE' });
                       fetchData();
-                      setSuccessMessage('Deleted successfully');
+                      setSuccessMessage('Account deleted successfully');
                       setTimeout(() => setSuccessMessage(null), 2000);
                     } catch (e) {
                       alert('Failed to delete');
@@ -381,4 +452,3 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
     </div>
   );
 }
-
