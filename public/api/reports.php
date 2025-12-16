@@ -24,6 +24,13 @@ if ($method == 'GET' && $action == 'generate_report') {
     }
 
     // Fetch Attendance Data (Restored)
+    // Initialize 5 weeks first to ensure charts always have data
+    $attendance = [];
+    for ($i = 1; $i <= 5; $i++) {
+        $weekKey = "Week $i";
+        $attendance[$weekKey] = ['name' => $weekKey, 'present' => 0, 'on_leave' => 0, 'absent' => 0];
+    }
+
     $attendanceSql = "SELECT WorkDate, 
                              SUM(CASE WHEN Status = 'Present' THEN 1 ELSE 0 END) as present,
                              SUM(CASE WHEN Status = 'On Leave' THEN 1 ELSE 0 END) as on_leave,
@@ -35,16 +42,18 @@ if ($method == 'GET' && $action == 'generate_report') {
     $attStmt->bind_param("ii", $month, $year);
     $attStmt->execute();
     $attendanceResult = $attStmt->get_result();
-    $attendance = [];
+
     while ($row = $attendanceResult->fetch_assoc()) {
-        // Calculate week number relative to the start of the month
-        $weekNum = "Week " . (intval(date('W', strtotime($row['WorkDate']))) - intval(date('W', strtotime("$year-$month-01"))) + 1);
-        if (!isset($attendance[$weekNum])) {
-            $attendance[$weekNum] = ['name' => $weekNum, 'present' => 0, 'on_leave' => 0, 'absent' => 0];
+        // Calculate week number based on day of month
+        $dayOfMonth = intval(date('j', strtotime($row['WorkDate'])));
+        $weekNum = ceil($dayOfMonth / 7);
+        $weekKey = "Week $weekNum";
+
+        if (isset($attendance[$weekKey])) {
+            $attendance[$weekKey]['present'] += $row['present'];
+            $attendance[$weekKey]['on_leave'] += $row['on_leave'];
+            $attendance[$weekKey]['absent'] += $row['absent'];
         }
-        $attendance[$weekNum]['present'] += $row['present'];
-        $attendance[$weekNum]['on_leave'] += $row['on_leave'];
-        $attendance[$weekNum]['absent'] += $row['absent'];
     }
 
     // Fetch Leave Data for Trends
@@ -139,13 +148,44 @@ if ($method == 'GET' && $action == 'generate_report') {
 
         $totalCost = array_sum(array_column($payrolls, 'NetPay'));
         $totalPresent = array_sum(array_column($attendance, 'present'));
-        $totalDays = count($attendance) > 0 ? ($totalPresent + array_sum(array_column($attendance, 'on_leave')) + array_sum(array_column($attendance, 'absent'))) : 1;
 
+        // Calculate Total Possible Attendance (Employees * Days in Month)
+        // This assumes 7 days a week work schedule as requested
+        $totalEmpQuery = "SELECT COUNT(*) as cx FROM Employee";
+        $teRes = $conn->query($totalEmpQuery);
+        $totalEmployeesAll = 0;
+        if ($teRes) {
+            $r = $teRes->fetch_assoc();
+            $totalEmployeesAll = intval($r['cx']);
+        }
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $totalPossibleDays = $totalEmployeesAll * $daysInMonth; // 7 days a week
+
+
+        // Build costs per week (attendance now always has 5 weeks)
         $costsPerWeek = [];
         $weekCount = count($attendance);
-        foreach ($attendance as $week => $data) {
-            $costsPerWeek[] = ['name' => $week, 'cost' => $weekCount > 0 ? $totalCost / $weekCount : 0];
+        foreach ($attendance as $weekKey => $data) {
+            $costsPerWeek[] = ['name' => $weekKey, 'cost' => $weekCount > 0 ? $totalCost / $weekCount : 0];
         }
+
+        // Calculate unique employees who took leave
+        $uniqueEmployeesQuery = "SELECT COUNT(DISTINCT UserID) as employeeCount 
+                                 FROM LeaveApplication 
+                                 WHERE Status = 'Approved' 
+                                 AND (
+                                    (MONTH(StartDate) = ? AND YEAR(StartDate) = ?) OR 
+                                    (MONTH(EndDate) = ? AND YEAR(EndDate) = ?)
+                                 )";
+        $empStmt = $conn->prepare($uniqueEmployeesQuery);
+        $empStmt->bind_param("iiii", $month, $year, $month, $year);
+        $empStmt->execute();
+        $empResult = $empStmt->get_result();
+        $empRow = $empResult->fetch_assoc();
+        $employeeCount = intval($empRow['employeeCount']);
+
+        // Calculate average leave per employee
+        $avgLeavePerEmployee = $employeeCount > 0 ? round($totalLeaveDays / $employeeCount, 1) : 0;
 
         echo json_encode([
             "status" => "success",
@@ -154,9 +194,9 @@ if ($method == 'GET' && $action == 'generate_report') {
                 "costs" => $costsPerWeek,
                 "leaves" => array_values($leaveTrends),
                 "stats" => [
-                    "avgAttendance" => ($totalDays > 0 ? round(($totalPresent / $totalDays) * 100, 1) : 0) . '%',
+                    "avgAttendance" => ($totalPossibleDays > 0 ? round(($totalPresent / $totalPossibleDays) * 100, 1) : 0) . '%',
                     "totalCost" => 'RM ' . number_format($totalCost, 2),
-                    "totalLeaveDays" => $totalLeaveDays
+                    "avgLeavePerEmployee" => $avgLeavePerEmployee
                 ]
             ]
         ]);

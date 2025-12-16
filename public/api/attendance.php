@@ -59,11 +59,35 @@ if ($method == 'GET') {
             ]
         ]);
     } elseif ($action == 'list_all') {
+        $date = $_GET['date'] ?? null;
+
         $sql = "SELECT a.AttendanceID, a.UserID, e.Name, a.WorkDate, a.ClockInTime, a.ClockOutTime, a.Status
                 FROM Attendance a
-                JOIN Employee e ON a.UserID = e.UserID
-                ORDER BY a.WorkDate DESC, e.Name ASC";
-        $result = $conn->query($sql);
+                JOIN Employee e ON a.UserID = e.UserID";
+
+        // Filter by date if provided (or default to today if intended, but let's stick to explicit filter)
+        // Actually, user wants "default being today". Frontend will handle sending today's date.
+        // Backend just needs to support filtering.
+
+        $params = [];
+        $types = "";
+
+        if ($date) {
+            $sql .= " WHERE a.WorkDate = ?";
+            $params[] = $date;
+            $types .= "s";
+        }
+
+        $sql .= " ORDER BY a.UserID DESC"; // Requested sort: ID biggest to smallest
+
+        $stmt = $conn->prepare($sql);
+        if ($date) {
+            $stmt->bind_param($types, ...$params);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+
         $records = [];
         if ($result) {
             while ($row = $result->fetch_assoc()) {

@@ -11,11 +11,11 @@ interface MonthlyReportProps {
 interface ReportData {
     attendance: any[];
     costs: any[];
-    leaves: any[];
+    leaves: any[]; // Added for leave trends
     stats: {
         avgAttendance: string;
         totalCost: string;
-        totalLeaveDays: number;
+        avgLeavePerEmployee: number; // Changed from totalLeaveDays
     }
 }
 
@@ -182,8 +182,8 @@ export function MonthlyReport({ isDarkMode }: MonthlyReportProps) {
                                     <FileText className="w-5 h-5" style={{ color: '#ea580c' }} />
                                 </div>
                                 <div>
-                                    <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Leave Days</p>
-                                    <p className={`text-2xl font-bold`} style={{ color: '#ea580c' }}>{reportData.stats.totalLeaveDays}</p>
+                                    <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Avg Leave/Employee</p>
+                                    <p className={`text-2xl font-bold`} style={{ color: '#ea580c' }}>{reportData.stats.avgLeavePerEmployee} days</p>
                                 </div>
                             </div>
                         </div>

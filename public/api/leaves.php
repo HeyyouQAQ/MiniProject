@@ -9,7 +9,7 @@ if ($method == 'GET') {
         $sql = "SELECT la.LeaveID, e.Name, la.LeaveType, la.StartDate, la.EndDate, la.Reason, la.Status, la.AttachmentPath
                 FROM LeaveApplication la
                 JOIN Employee e ON la.UserID = e.UserID
-                ORDER BY la.StartDate ASC";
+                ORDER BY la.StartDate DESC";
         $result = $conn->query($sql);
         $requests = [];
         if ($result) {

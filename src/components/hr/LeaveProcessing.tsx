@@ -182,7 +182,7 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
                                         </div>
                                         <div>
                                             <h3 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{req.Name}</h3>
-                                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-indigo-50 text-indigo-600'}`}>
+                                            <span className={`text-xs font-bold px-3 py-1 mt-1 inline-block rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-800'}`}>
                                                 {req.LeaveType}
                                             </span>
                                         </div>
