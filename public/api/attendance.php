@@ -5,14 +5,18 @@ $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
 // Utility function to format time
-function format_time($datetime) {
-    if (!$datetime) return null;
+function format_time($datetime)
+{
+    if (!$datetime)
+        return null;
     return (new DateTime($datetime))->format('h:i:s A');
 }
 
 // Utility function to calculate hours
-function calculate_hours($clock_in, $clock_out) {
-    if (!$clock_in || !$clock_out) return '0h 00m';
+function calculate_hours($clock_in, $clock_out)
+{
+    if (!$clock_in || !$clock_out)
+        return '0h 00m';
     $in = new DateTime($clock_in);
     $out = new DateTime($clock_out);
     $interval = $in->diff($out);
@@ -29,7 +33,7 @@ if ($method == 'GET') {
         }
 
         $today = date('Y-m-d');
-        
+
         $stmt = $conn->prepare("SELECT ClockInTime, ClockOutTime FROM Attendance WHERE UserID = ? AND WorkDate = ?");
         $stmt->bind_param("is", $userId, $today);
         $stmt->execute();
@@ -39,7 +43,7 @@ if ($method == 'GET') {
         $lastStmt->bind_param("i", $userId);
         $lastStmt->execute();
         $lastRecord = $lastStmt->get_result()->fetch_assoc();
-        
+
         $status = 'clocked-out';
         if ($todaysRecord && $todaysRecord['ClockInTime'] && !$todaysRecord['ClockOutTime']) {
             $status = 'clocked-in';
@@ -82,7 +86,7 @@ if ($method == 'GET') {
             echo json_encode(["status" => "error", "message" => "User ID is required."]);
             exit;
         }
-        
+
         $now = date('Y-m-d H:i:s');
         $today = date('Y-m-d');
 
@@ -93,7 +97,7 @@ if ($method == 'GET') {
 
         if ($action == 'clock_in') {
             if ($record) {
-                if($record['ClockOutTime']){
+                if ($record['ClockOutTime']) {
                     http_response_code(400);
                     echo json_encode(["status" => "error", "message" => "You have already completed a shift today."]);
                     exit;
@@ -128,9 +132,9 @@ if ($method == 'GET') {
         }
     } elseif ($action == 'update_record') {
         $attendanceId = $input['attendanceId'] ?? 0;
-        $clockIn = $input['clockIn'] ?? null;
-        $clockOut = $input['clockOut'] ?? null;
-        $overwrittenBy = $input['overwrittenBy'] ?? null;
+        $clockIn = !empty($input['clockIn']) ? $input['clockIn'] : null;
+        $clockOut = !empty($input['clockOut']) ? $input['clockOut'] : null;
+        $overwrittenBy = !empty($input['overwrittenBy']) ? $input['overwrittenBy'] : null;
 
         if (empty($attendanceId)) {
             http_response_code(400);
@@ -140,12 +144,30 @@ if ($method == 'GET') {
 
         $stmt = $conn->prepare("UPDATE Attendance SET ClockInTime = ?, ClockOutTime = ?, OverwrittenBy = ? WHERE AttendanceID = ?");
         $stmt->bind_param("ssii", $clockIn, $clockOut, $overwrittenBy, $attendanceId);
-        
+
         if ($stmt->execute()) {
             echo json_encode(["status" => "success", "message" => "Record updated successfully."]);
         } else {
             http_response_code(500);
-            echo json_encode(["status" => "error", "message" => "Failed to update record."]);
+            echo json_encode(["status" => "error", "message" => "Failed to update record: " . $stmt->error]);
+        }
+    } elseif ($action == 'delete_record') {
+        $attendanceId = $input['attendanceId'] ?? 0;
+
+        if (empty($attendanceId)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Attendance ID is required."]);
+            exit;
+        }
+
+        $stmt = $conn->prepare("DELETE FROM Attendance WHERE AttendanceID = ?");
+        $stmt->bind_param("i", $attendanceId);
+
+        if ($stmt->execute()) {
+            echo json_encode(["status" => "success", "message" => "Record deleted successfully."]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Failed to delete record."]);
         }
     } else {
         http_response_code(400);

@@ -28,8 +28,6 @@ export function LeaveApplication({ isDarkMode }: { isDarkMode: boolean }) {
 
     // Filter State
     const [filterStatus, setFilterStatus] = useState('All');
-    const [filterType, setFilterType] = useState('All');
-    const [sortOrder, setSortOrder] = useState('Latest');
 
     // Leave Balance State
     const [leaveBalance, setLeaveBalance] = useState<any>(null);
@@ -59,11 +57,10 @@ export function LeaveApplication({ isDarkMode }: { isDarkMode: boolean }) {
 
     const filteredHistory = history
         .filter(item => filterStatus === 'All' || item.Status === filterStatus)
-        .filter(item => filterType === 'All' || item.LeaveType === filterType)
         .sort((a, b) => {
             const dateA = new Date(a.StartDate).getTime();
             const dateB = new Date(b.StartDate).getTime();
-            return sortOrder === 'Latest' ? dateB - dateA : dateA - dateB;
+            return dateB - dateA; // Always latest first
         });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -137,12 +134,15 @@ export function LeaveApplication({ isDarkMode }: { isDarkMode: boolean }) {
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'Approved': return 'bg-green-100 text-green-800';
-            case 'Rejected': return 'bg-red-100 text-red-800';
-            default: return 'bg-yellow-100 text-yellow-800';
-        }
+    const getAttachmentUrl = (path: string) => {
+        if (!path) return '#';
+        if (path.startsWith('http')) return path;
+
+        // Robustly join API_BASE_URL and path
+        const cleanBase = API_BASE_URL.replace(/\/api\/?$/, '');
+        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+
+        return `${cleanBase}/${cleanPath}`;
     };
 
     const cardClass = `rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`;
@@ -280,94 +280,109 @@ export function LeaveApplication({ isDarkMode }: { isDarkMode: boolean }) {
                 {/* Leave History */}
                 <div className="mt-16 pt-6 border-t border-gray-200 lg:mt-0 lg:pt-0 lg:border-t-0">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className={`text-xl font-semibold transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                            Application History
-                        </h2>
-                        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {filteredHistory.length} records
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <div className={`p-3 rounded-2xl ${isDarkMode ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'}`}>
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className={`text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent`}>
+                                    Application History
+                                </h2>
+                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {filteredHistory.length} records
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className={`${cardClass} min-h-[400px]`}>
-                        {/* Filter Bar */}
-                        <div className={`grid grid-cols-3 gap-2 mb-4 pb-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <Select onValueChange={setFilterType} value={filterType}>
-                                <SelectTrigger className={`h-9 text-sm rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600' : ''}`}>
-                                    <SelectValue placeholder="All Types" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-lg">
-                                    <SelectItem value="All">All Types</SelectItem>
-                                    <SelectItem value="Annual">Annual</SelectItem>
-                                    <SelectItem value="Sick">Sick</SelectItem>
-                                    <SelectItem value="Unpaid">Unpaid</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    {/* Filter Tabs */}
+                    <div className={`flex gap-2 mb-6 p-1 rounded-xl ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-100'}`}>
+                        {(['All', 'Pending', 'Approved', 'Rejected'] as const).map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setFilterStatus(status)}
+                                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${filterStatus === status
+                                    ? isDarkMode
+                                        ? 'bg-indigo-500 text-white shadow-lg'
+                                        : 'bg-white text-indigo-600 shadow-md'
+                                    : isDarkMode
+                                        ? 'text-gray-400 hover:text-white'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
 
-                            <Select onValueChange={setFilterStatus} value={filterStatus}>
-                                <SelectTrigger className={`h-9 text-sm rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600' : ''}`}>
-                                    <SelectValue placeholder="All Status" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-lg">
-                                    <SelectItem value="All">All Status</SelectItem>
-                                    <SelectItem value="Pending">Pending</SelectItem>
-                                    <SelectItem value="Approved">Approved</SelectItem>
-                                    <SelectItem value="Rejected">Rejected</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            <Select onValueChange={setSortOrder} value={sortOrder}>
-                                <SelectTrigger className={`h-9 text-sm rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600' : ''}`}>
-                                    <SelectValue placeholder="Sort" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-lg">
-                                    <SelectItem value="Latest">Latest First</SelectItem>
-                                    <SelectItem value="Oldest">Oldest First</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* History List */}
-                        <div className="space-y-3 overflow-y-auto max-h-[350px]">
-                            {filteredHistory.length === 0 ? (
-                                <div className={`text-center py-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                                    <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                    <p>No leave applications found.</p>
+                    {/* History List */}
+                    <div className="space-y-5">
+                        {filteredHistory.length === 0 ? (
+                            <div className={`rounded-2xl p-6 shadow-xl transition-all duration-300 text-center py-16 ${isDarkMode
+                                ? 'bg-gray-800/60 backdrop-blur-xl border border-gray-700/50'
+                                : 'bg-white/80 backdrop-blur-xl border border-white/50'}`}>
+                                <div className={`p-4 rounded-full mx-auto w-fit mb-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                    <FileText className={`w-8 h-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                                 </div>
-                            ) : (
-                                filteredHistory.map((record, idx) => (
-                                    <div key={idx} className={`p-4 rounded-lg border transition-colors ${isDarkMode ? 'bg-gray-700/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div>
-                                                <span className={`text-xs font-semibold uppercase px-2 py-0.5 rounded ${isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>
-                                                    {record.LeaveType}
-                                                </span>
-                                                <div className={`mt-1 font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                    {record.StartDate} - {record.EndDate}
-                                                </div>
-                                            </div>
-                                            <span className={`px-2 py-1 rounded text-xs font-semibold uppercase ${getStatusColor(record.Status)}`}>
+                                <p className={`text-lg font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    No leave applications found
+                                </p>
+                            </div>
+                        ) : (
+                            filteredHistory.map((record, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`
+                                        group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:scale-[1.01]
+                                        ${isDarkMode
+                                            ? 'bg-gray-800/60 backdrop-blur-xl border-gray-700/50 hover:border-gray-600'
+                                            : 'bg-white/80 backdrop-blur-xl border-white/50 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-200/20'}
+                                        ${record.Status !== 'Pending' ? 'opacity-60' : ''}
+                                    `}
+                                >
+                                    {record.Status !== 'Pending' && (
+                                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-gray-900/70 pointer-events-none">
+                                            <span
+                                                className="px-6 py-3 rounded-lg font-semibold uppercase tracking-wide text-sm text-white pointer-events-auto"
+                                                style={{ backgroundColor: record.Status === 'Approved' ? '#16a34a' : '#dc2626' }}
+                                            >
                                                 {record.Status}
                                             </span>
                                         </div>
-                                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                            {record.Reason}
-                                        </p>
+                                    )}
+
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-start mb-5">
+                                            <div>
+                                                <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>
+                                                    {record.LeaveType}
+                                                </span>
+                                            </div>
+                                            <div className={`flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-full ${isDarkMode ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                                                <Calendar className="w-4 h-4" />
+                                                {record.StartDate} — {record.EndDate}
+                                            </div>
+                                        </div>
+
+                                        <div className={`p-4 rounded-xl mb-4 ${isDarkMode ? 'bg-gray-700/30 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
+                                            <p className="text-sm leading-relaxed">"{record.Reason}"</p>
+                                        </div>
+
                                         {record.AttachmentPath && (
                                             <a
-                                                href={`${API_BASE_URL}/../${record.AttachmentPath}`}
+                                                href={getAttachmentUrl(record.AttachmentPath)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                                className={`relative z-20 flex flex-row items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors mb-4 w-fit ${isDarkMode ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
                                             >
-                                                <Paperclip className="w-3 h-3" />
-                                                View Attachment
+                                                <Paperclip className="w-4 h-4" style={{ flexShrink: 0 }} />
+                                                <span>View/Download Attachment</span>
                                             </a>
                                         )}
                                     </div>
-                                ))
-                            )}
-                        </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

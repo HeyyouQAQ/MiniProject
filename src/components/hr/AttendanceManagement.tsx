@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Clock, Users, Pencil } from 'lucide-react';
+import { Clock, Users, Pencil, Trash2 } from 'lucide-react';
 
 interface AttendanceRecord {
     AttendanceID: number;
@@ -55,10 +55,34 @@ export function AttendanceManagement({ isDarkMode }: { isDarkMode: boolean }) {
         setIsEditDialogOpen(true);
     };
 
+    const handleDeleteClick = async (record: AttendanceRecord) => {
+        if (!confirm(`Are you sure you want to delete attendance record for ${record.Name} on ${record.WorkDate}?`)) return;
+
+        try {
+            const response = await fetchApi('attendance.php?action=delete_record', {
+                method: 'POST',
+                body: JSON.stringify({ attendanceId: record.AttendanceID })
+            });
+
+            if (response.status === 'success') {
+                fetchAttendanceRecords();
+            } else {
+                setError(response.message || "Failed to delete record.");
+            }
+        } catch (err: any) {
+            setError(err.message || "Connection error.");
+        }
+    };
+
     const handleSaveChanges = async () => {
         if (!selectedRecord) return;
 
         const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (!user.id) {
+            alert("User session expired or invalid. Please log out and log in again.");
+            return;
+        }
+
         const payload = {
             attendanceId: selectedRecord.AttendanceID,
             clockIn: editData.clockIn,
@@ -163,14 +187,24 @@ export function AttendanceManagement({ isDarkMode }: { isDarkMode: boolean }) {
                                         </span>
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-right">
-                                        <button
-                                            onClick={() => handleEditClick(rec)}
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:scale-105"
-                                            style={{ backgroundColor: '#dc2626', color: 'white' }}
-                                        >
-                                            <Pencil className="w-3.5 h-3.5" />
-                                            Edit
-                                        </button>
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={() => handleEditClick(rec)}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:scale-105"
+                                                style={{ backgroundColor: '#2563eb', color: 'white' }}
+                                            >
+                                                <Pencil className="w-3.5 h-3.5" />
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteClick(rec)}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:scale-105"
+                                                style={{ backgroundColor: '#dc2626', color: 'white' }}
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Delete
+                                            </button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))

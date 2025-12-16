@@ -75,12 +75,21 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
         ? 'bg-gray-800/60 backdrop-blur-xl border border-gray-700/50'
         : 'bg-white/80 backdrop-blur-xl border border-white/50'}`;
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'Approved': return 'bg-green-600 text-white';
-            case 'Rejected': return 'bg-red-600 text-white';
-            default: return 'bg-yellow-500 text-white';
-        }
+
+
+    const getAttachmentUrl = (path: string) => {
+        if (!path) return '#';
+        if (path.startsWith('http')) return path;
+
+        // Robustly join API_BASE_URL and path
+        // API_BASE_URL usually ends with .../public/api
+        // Path usually starts with api/uploads/...
+        // We want .../public/api/uploads/...
+
+        const cleanBase = API_BASE_URL.replace(/\/api\/?$/, ''); // Strip trailing /api
+        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+
+        return `${cleanBase}/${cleanPath}`;
     };
 
     return (
@@ -155,9 +164,9 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
                             `}
                         >
                             {req.Status !== 'Pending' && (
-                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-gray-900/70">
+                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-gray-900/70 pointer-events-none">
                                     <span
-                                        className="px-6 py-3 rounded-lg font-semibold uppercase tracking-wide text-sm text-white"
+                                        className="px-6 py-3 rounded-lg font-semibold uppercase tracking-wide text-sm text-white pointer-events-auto"
                                         style={{ backgroundColor: req.Status === 'Approved' ? '#16a34a' : '#dc2626' }}
                                     >
                                         {req.Status}
@@ -190,10 +199,10 @@ export function LeaveProcessing({ isDarkMode }: LeaveProcessingProps) {
 
                                 {req.AttachmentPath && (
                                     <a
-                                        href={`${API_BASE_URL}/../${req.AttachmentPath}`}
+                                        href={getAttachmentUrl(req.AttachmentPath)}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className={`flex flex-row items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors mb-4 w-fit ${isDarkMode ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+                                        className={`relative z-20 flex flex-row items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors mb-4 w-fit ${isDarkMode ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
                                     >
                                         <Paperclip className="w-4 h-4" style={{ flexShrink: 0 }} />
                                         <span>View/Download Attachment</span>
