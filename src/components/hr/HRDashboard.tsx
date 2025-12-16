@@ -1,21 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Sidebar, MenuItem } from '../Sidebar';
 import { Header } from '../Header';
-<<<<<<< HEAD
-import { DollarSign, Users, BarChart2, Umbrella, Calendar, LayoutDashboard, Clock } from 'lucide-react';
-=======
 import { DollarSign, Users, BarChart2, Umbrella, Calendar, LayoutDashboard, Clock, TrendingUp, UserCheck, FileText } from 'lucide-react';
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 import { Payroll } from './Payroll';
 import { RoleAssignment } from './RoleAssignment';
 import { MonthlyReport } from './MonthlyReport';
 import { LeaveProcessing } from './LeaveProcessing';
 import { ScheduleGen } from './ScheduleGen';
 import { AttendanceManagement } from './AttendanceManagement';
-<<<<<<< HEAD
-=======
 import { fetchApi } from '../../utils/api';
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 
 interface HRDashboardProps {
     onLogout: () => void;
