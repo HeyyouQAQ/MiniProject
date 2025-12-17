@@ -4,7 +4,7 @@ import { Header } from '../Header';
 import { Schedule } from '../Schedule';
 import { StatsCards } from '../StatsCards';
 import { ChatBot } from '../ChatBot';
-import { Clock, Bell, MessageCircle, DollarSign, Umbrella, LayoutDashboard } from 'lucide-react';
+import { Clock, Bell, MessageCircle, DollarSign, Umbrella, LayoutDashboard, Users } from 'lucide-react';
 import { fetchApi } from '../../utils/api';
 import { LeaveApplication } from './LeaveApplication';
 import { Payroll } from './Payroll';
@@ -213,6 +213,21 @@ export function StaffDashboard({ onLogout }: StaffDashboardProps) {
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     {activeSection === 'dashboard' && (
                         <div className="space-y-6">
+                            <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-lg" style={{ backgroundColor: '#dc2626' }}>
+                                        <Users className="w-8 h-8 text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            Staff Dashboard
+                                        </h2>
+                                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                            View your schedule and everyday tasks
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                             <Schedule isDarkMode={isDarkMode} />
                             <StatsCards isDarkMode={isDarkMode} />
                         </div>

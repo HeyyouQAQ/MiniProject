@@ -40,7 +40,7 @@ if ($method == 'GET' && $action == 'generate_report') {
 
 >>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
     $attendanceSql = "SELECT WorkDate, 
-                             SUM(CASE WHEN Status = 'Present' THEN 1 ELSE 0 END) as present,
+                             SUM(CASE WHEN Status IN ('Present', 'Late', 'Half Day') THEN 1 ELSE 0 END) as present,
                              SUM(CASE WHEN Status = 'On Leave' THEN 1 ELSE 0 END) as on_leave,
                              SUM(CASE WHEN Status = 'Absent' THEN 1 ELSE 0 END) as absent
                       FROM Attendance
@@ -77,9 +77,9 @@ if ($method == 'GET' && $action == 'generate_report') {
         $weekKey = "Week $weekNum";
 
         if (isset($attendance[$weekKey])) {
-            $attendance[$weekKey]['present'] += $row['present'];
-            $attendance[$weekKey]['on_leave'] += $row['on_leave'];
-            $attendance[$weekKey]['absent'] += $row['absent'];
+            $attendance[$weekKey]['present'] += intval($row['present']);
+            $attendance[$weekKey]['on_leave'] += intval($row['on_leave']);
+            $attendance[$weekKey]['absent'] += intval($row['absent']);
         }
     }
 

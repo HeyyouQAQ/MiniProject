@@ -64,10 +64,11 @@ export function Payroll({ isDarkMode }: PayrollProps) {
     };
 
     // Calculate totals safely
-    const totalGross = payrolls.reduce((sum, emp) => sum + (emp.GrossPay || 0), 0);
-    const totalDeductions = payrolls.reduce((sum, emp) => sum + (emp.Deductions || 0), 0);
-    const totalNet = payrolls.reduce((sum, emp) => sum + (emp.NetPay || 0), 0);
-    const totalHours = payrolls.reduce((sum, emp) => sum + (emp.TotalHours || 0), 0);
+    // Calculate totals safely
+    const totalGross = payrolls.reduce((sum, emp) => sum + Number(emp.GrossPay || 0), 0);
+    const totalDeductions = payrolls.reduce((sum, emp) => sum + Number(emp.Deductions || 0), 0);
+    const totalNet = payrolls.reduce((sum, emp) => sum + Number(emp.NetPay || 0), 0);
+    const totalHours = payrolls.reduce((sum, emp) => sum + Number(emp.TotalHours || 0), 0);
 
     const cardClass = `rounded-lg p-6 shadow-sm transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`;
 
@@ -201,10 +202,10 @@ export function Payroll({ isDarkMode }: PayrollProps) {
                                                 {emp.RoleName}
                                             </span>
                                         </td>
-                                        <td className={`py-4 px-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{(emp.TotalHours || 0).toFixed(2)}h</td>
-                                        <td className={`py-4 px-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>RM {(emp.GrossPay || 0).toFixed(2)}</td>
-                                        <td className="py-4 px-4 text-red-600">-RM {(emp.Deductions || 0).toFixed(2)}</td>
-                                        <td className={`py-4 px-4 text-right font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>RM {(emp.NetPay || 0).toFixed(2)}</td>
+                                        <td className={`py-4 px-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{Number(emp.TotalHours || 0).toFixed(2)}h</td>
+                                        <td className={`py-4 px-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>RM {Number(emp.GrossPay || 0).toFixed(2)}</td>
+                                        <td className="py-4 px-4 text-red-600">-RM {Number(emp.Deductions || 0).toFixed(2)}</td>
+                                        <td className={`py-4 px-4 text-right font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>RM {Number(emp.NetPay || 0).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>

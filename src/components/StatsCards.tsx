@@ -1,37 +1,66 @@
-import { Clock, DollarSign, StickyNote } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Clock, DollarSign, Umbrella } from 'lucide-react';
+import { fetchApi } from '../utils/api';
 
 interface StatsCardsProps {
   isDarkMode?: boolean;
 }
 
 export function StatsCards({ isDarkMode = false }: StatsCardsProps) {
+  const [stats, setStats] = useState({
+    hoursWorked: 0,
+    otHours: 0,
+    lastPay: 'RM 0.00',
+    payPeriod: 'No Data',
+    prevPay: 'vs Last Month: N/A',
+    leaveTaken: 0,
+    leaveBreakdown: 'None'
+  });
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (user.id) {
+          const response = await fetchApi(`staff_stats.php?userId=${user.id}`);
+          if (response.status === 'success') {
+            setStats(response.data);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load staff stats", e);
+      }
+    };
+    loadStats();
+  }, []);
+
   const cards = [
     {
       title: 'Hours Worked',
-      value: '38.5',
+      value: `${stats.hoursWorked}`,
       subtitle: 'This week',
       icon: Clock,
-      detail: 'Overtime: 2.5 hours',
+      detail: `Overtime: ${stats.otHours} hours`,
       color: 'bg-blue-50',
       iconColor: 'text-blue-600',
       darkColor: 'bg-blue-900 bg-opacity-30',
     },
     {
-      title: 'Salary',
-      value: 'RM 892.50',
-      subtitle: 'Current period',
+      title: 'Latest Salary',
+      value: stats.lastPay,
+      subtitle: stats.payPeriod,
       icon: DollarSign,
-      detail: 'Last pay: RM 945.00',
+      detail: stats.prevPay || 'vs Last Month: N/A',
       color: 'bg-green-50',
       iconColor: 'text-green-600',
       darkColor: 'bg-green-900 bg-opacity-30',
     },
     {
-      title: 'Notes',
-      value: '3',
-      subtitle: 'Active notes',
-      icon: StickyNote,
-      detail: 'Last updated: Today',
+      title: 'Total Leave Taken',
+      value: `${stats.leaveTaken} Days`,
+      subtitle: 'Approved this year',
+      icon: Umbrella,
+      detail: stats.leaveBreakdown || 'None',
       color: 'bg-yellow-50',
       iconColor: 'text-yellow-600',
       darkColor: 'bg-yellow-900 bg-opacity-30',
