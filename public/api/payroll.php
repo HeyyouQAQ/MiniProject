@@ -58,7 +58,7 @@ if ($method == 'GET') {
         $sql = "SELECT p.*, e.Name, r.Type as RoleName 
                 FROM Payroll p
                 JOIN Employee e ON p.UserID = e.UserID
-                JOIN Role r ON e.RoleID = r.RoleID
+                LEFT JOIN Role r ON e.RoleID = r.RoleID
                 ORDER BY p.PayPeriodEnd DESC, e.Name ASC";
         $result = $conn->query($sql);
         $payrolls = [];

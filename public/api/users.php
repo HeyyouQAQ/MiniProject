@@ -163,7 +163,7 @@ if ($method == 'GET') {
             // Simulate Email
             $link = "http://localhost:3000/MiniProject/?token=" . $token;
             $emailContent = "To: $email\nSubject: Password Reset Request\n\nHello " . $row['Name'] . ",\n\nWe received a request to reset your password.\nClick here to reset it:\n$link\n\n(Link expires in 24 hours)\n----------------------------------------------------\n\n";
-            $logPath = __DIR__ . '/../../simulated_emails.txt';
+            $logPath = 'c:/Users/bii wong/.gemini/MiniProjectyeow/MiniProject/simulated_emails.txt';
             file_put_contents($logPath, $emailContent, FILE_APPEND);
         }
 
@@ -328,8 +328,8 @@ if ($method == 'GET') {
             if ($token) {
                 $link = "http://localhost:3000/MiniProject/?token=" . $token;
                 $emailContent = "To: $email\nSubject: Set your WcDonald's Password\n\nWelcome $name!\n\nPlease click the link below to set your password:\n$link\n\n(Link expires in 24 hours)\n----------------------------------------------------\n\n";
-                // Relative path for portability (Up from /public/api/ to project root)
-                $logPath = __DIR__ . '/../../simulated_emails.txt';
+                // Redirect to workspace for user visibility
+                $logPath = 'c:/Users/bii wong/.gemini/MiniProjectyeow/MiniProject/simulated_emails.txt';
                 file_put_contents($logPath, $emailContent, FILE_APPEND);
                 echo json_encode(["status" => "success", "message" => "User created. Invitation sent (simulated).", "id" => $newId]);
             } else {

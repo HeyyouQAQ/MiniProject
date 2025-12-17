@@ -1,4 +1,8 @@
 <?php
+// Suppress errors to ensure clean JSON output
+error_reporting(0);
+ini_set('display_errors', 0);
+
 require 'db_connect.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -19,18 +23,12 @@ if ($method == 'GET' && $action == 'generate_report') {
     $stmt->execute();
     $payrollResult = $stmt->get_result();
     $payrolls = [];
-<<<<<<< HEAD
-    while($row = $payrollResult->fetch_assoc()) {
-        $payrolls[] = $row;
-    }
 
-    // Fetch Attendance Data
-=======
     while ($row = $payrollResult->fetch_assoc()) {
         $payrolls[] = $row;
     }
 
-    // Fetch Attendance Data (Restored)
+    // Fetch Attendance Data
     // Initialize 5 weeks first to ensure charts always have data
     $attendance = [];
     for ($i = 1; $i <= 5; $i++) {
@@ -38,7 +36,6 @@ if ($method == 'GET' && $action == 'generate_report') {
         $attendance[$weekKey] = ['name' => $weekKey, 'present' => 0, 'on_leave' => 0, 'absent' => 0];
     }
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
     $attendanceSql = "SELECT WorkDate, 
                              SUM(CASE WHEN Status IN ('Present', 'Late', 'Half Day') THEN 1 ELSE 0 END) as present,
                              SUM(CASE WHEN Status = 'On Leave' THEN 1 ELSE 0 END) as on_leave,
@@ -50,25 +47,6 @@ if ($method == 'GET' && $action == 'generate_report') {
     $attStmt->bind_param("ii", $month, $year);
     $attStmt->execute();
     $attendanceResult = $attStmt->get_result();
-<<<<<<< HEAD
-    $attendance = [];
-    while($row = $attendanceResult->fetch_assoc()) {
-        $weekNum = "Week " . (intval(date('W', strtotime($row['WorkDate']))) - intval(date('W', strtotime("$year-$month-01"))) + 1);
-        if (!isset($attendance[$weekNum])) {
-            $attendance[$weekNum] = ['name' => $weekNum, 'present' => 0, 'on_leave' => 0, 'absent' => 0];
-        }
-        $attendance[$weekNum]['present'] += $row['present'];
-        $attendance[$weekNum]['on_leave'] += $row['on_leave'];
-        $attendance[$weekNum]['absent'] += $row['absent'];
-    }
-    
-    if ($format == 'csv') {
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="monthly_report_'.$year.'_'.$month.'.csv"');
-        
-        $output = fopen('php://output', 'w');
-        
-=======
 
     while ($row = $attendanceResult->fetch_assoc()) {
         // Calculate week number based on day of month
@@ -131,27 +109,19 @@ if ($method == 'GET' && $action == 'generate_report') {
         }
     }
 
-    // Clean up empty weeks if any (optional, but keeping 5 is safe)
-    // Filter out weeks with no data if desired, but fixed 1-5 is better for charts
-
     if ($format == 'csv') {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="monthly_report_' . $year . '_' . $month . '.csv"');
 
         $output = fopen('php://output', 'w');
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         // Payroll Data
         fputcsv($output, ['Payroll Report']);
         fputcsv($output, ['Employee', 'Total Hours', 'Gross Pay', 'Deductions', 'Net Pay']);
         foreach ($payrolls as $row) {
             fputcsv($output, $row);
         }
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         // Attendance Data
         fputcsv($output, []); // Spacer
         fputcsv($output, ['Attendance Report']);
@@ -159,9 +129,6 @@ if ($method == 'GET' && $action == 'generate_report') {
         foreach ($attendance as $row) {
             fputcsv($output, $row);
         }
-<<<<<<< HEAD
-        
-=======
 
         // Leave Data
         fputcsv($output, []); // Spacer
@@ -171,27 +138,13 @@ if ($method == 'GET' && $action == 'generate_report') {
             fputcsv($output, $row);
         }
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         fclose($output);
         exit;
 
     } else { // JSON format
-<<<<<<< HEAD
-        $totalCost = array_sum(array_column($payrolls, 'NetPay'));
-        $totalPresent = array_sum(array_column($attendance, 'present'));
-        $totalDays = count($attendance) > 0 ? ($totalPresent + array_sum(array_column($attendance, 'on_leave')) + array_sum(array_column($attendance, 'absent'))) : 1;
-        
-        $costsPerWeek = [];
-        // Simplified cost per week - for real-world, this would be more complex
-        foreach ($attendance as $week => $data) {
-            $costsPerWeek[] = ['name' => $week, 'cost' => $totalCost / count($attendance)];
-        }
-=======
         // Ensure strictly JSON output
         header('Content-Type: application/json');
         error_reporting(0); // Suppress warnings preventing invalid JSON
-        // Add json debug output
-        // echo json_encode(["debug" => "json output"]); // Example debug output, uncomment to use
 
         $totalCost = array_sum(array_column($payrolls, 'NetPay'));
         $totalPresent = array_sum(array_column($attendance, 'present'));
@@ -207,7 +160,6 @@ if ($method == 'GET' && $action == 'generate_report') {
         }
         $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
         $totalPossibleDays = $totalEmployeesAll * $daysInMonth; // 7 days a week
-
 
         // Build costs per week (attendance now always has 5 weeks)
         $costsPerWeek = [];
@@ -233,25 +185,17 @@ if ($method == 'GET' && $action == 'generate_report') {
 
         // Calculate average leave per employee
         $avgLeavePerEmployee = $employeeCount > 0 ? round($totalLeaveDays / $employeeCount, 1) : 0;
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 
         echo json_encode([
             "status" => "success",
             "data" => [
                 "attendance" => array_values($attendance),
                 "costs" => $costsPerWeek,
-<<<<<<< HEAD
-                "stats" => [
-                    "avgAttendance" => ($totalDays > 0 ? round(($totalPresent / $totalDays) * 100, 1) : 0) . '%',
-                    "totalCost" => 'RM ' . number_format($totalCost, 2),
-                    "productivityScore" => "9.2/10" // Placeholder
-=======
                 "leaves" => array_values($leaveTrends),
                 "stats" => [
                     "avgAttendance" => ($totalPossibleDays > 0 ? round(($totalPresent / $totalPossibleDays) * 100, 1) : 0) . '%',
                     "totalCost" => 'RM ' . number_format($totalCost, 2),
                     "avgLeavePerEmployee" => $avgLeavePerEmployee
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
                 ]
             ]
         ]);
@@ -263,8 +207,4 @@ if ($method == 'GET' && $action == 'generate_report') {
 }
 
 $conn->close();
-<<<<<<< HEAD
 ?>
-=======
-?>
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd

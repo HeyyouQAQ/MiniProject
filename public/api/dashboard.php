@@ -9,13 +9,29 @@ $res = $conn->query("SELECT COUNT(*) as c FROM Employee");
 $row = $res->fetch_assoc();
 $stats['totalUsers'] = $row['c'];
 
-// Staff (RoleID 3)
-$res = $conn->query("SELECT COUNT(*) as c FROM Employee WHERE RoleID=3"); // Assuming 3 is Staff
-$row = $res->fetch_assoc();
-$stats['staffCount'] = $row['c']; // Re-using key 'staffCount' for frontend compatibility
+// Helper to get Role ID
+function getRoleId($conn, $type) {
+    $stmt = $conn->prepare("SELECT RoleID FROM Role WHERE Type = ?");
+    $stmt->bind_param("s", $type);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($row = $res->fetch_assoc()) return $row['RoleID'];
+    return 0;
+}
 
-// HR (RoleID 2)
-$res = $conn->query("SELECT COUNT(*) as c FROM Employee WHERE RoleID=2"); // Assuming 2 is HR
+$staffRoleId = getRoleId($conn, 'Staff');
+if ($staffRoleId == 0) {
+    $staffRoleId = getRoleId($conn, 'Worker');
+}
+$hrRoleId = getRoleId($conn, 'HR');
+
+// Staff
+$res = $conn->query("SELECT COUNT(*) as c FROM Employee WHERE RoleID=$staffRoleId");
+$row = $res->fetch_assoc();
+$stats['staffCount'] = $row['c'];
+
+// HR
+$res = $conn->query("SELECT COUNT(*) as c FROM Employee WHERE RoleID=$hrRoleId");
 $row = $res->fetch_assoc();
 $stats['hrCount'] = $row['c'];
 

@@ -30,12 +30,13 @@ export function MonthlyReport({ isDarkMode }: MonthlyReportProps) {
         setIsLoading(true);
         setError('');
         try {
-            const response = await fetchApi(`reports.php?action=generate_report&month=${month}&year=${year}&format=${format}`, {
-                method: 'GET',
-            });
-
             if (format === 'csv') {
-                const blob = new Blob([response], { type: 'text/csv' });
+                const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost/MiniProjectyeow/MiniProject/public/api';
+                const response = await fetch(`${apiBaseUrl}/reports.php?action=generate_report&month=${month}&year=${year}&format=${format}`);
+
+                if (!response.ok) throw new Error('Failed to fetch CSV');
+
+                const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -45,6 +46,10 @@ export function MonthlyReport({ isDarkMode }: MonthlyReportProps) {
                 a.remove();
                 window.URL.revokeObjectURL(url);
             } else {
+                const response = await fetchApi(`reports.php?action=generate_report&month=${month}&year=${year}&format=${format}`, {
+                    method: 'GET',
+                });
+
                 if (response.status === 'success') {
                     setReportData(response.data);
                 } else {

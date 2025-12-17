@@ -9,11 +9,7 @@ if ($method == 'GET') {
         $sql = "SELECT la.LeaveID, e.Name, la.LeaveType, la.StartDate, la.EndDate, la.Reason, la.Status, la.AttachmentPath
                 FROM LeaveApplication la
                 JOIN Employee e ON la.UserID = e.UserID
-<<<<<<< HEAD
-                ORDER BY la.StartDate ASC";
-=======
                 ORDER BY la.StartDate DESC";
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         $result = $conn->query($sql);
         $requests = [];
         if ($result) {
@@ -38,8 +34,6 @@ if ($method == 'GET') {
             $requests[] = $row;
         }
         echo json_encode(["status" => "success", "data" => $requests]);
-<<<<<<< HEAD
-=======
     } elseif ($action == 'leave_balance') {
         // Get leave balance for a user
         $userId = $_GET['userId'] ?? 0;
@@ -142,7 +136,6 @@ if ($method == 'GET') {
         ];
 
         echo json_encode(["status" => "success", "data" => $balance]);
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
     } else {
         http_response_code(400);
         echo json_encode(["status" => "error", "message" => "Invalid GET action."]);
@@ -151,11 +144,7 @@ if ($method == 'GET') {
     if ($action == 'apply') {
         // Handle both JSON and FormData
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         if (strpos($contentType, 'multipart/form-data') !== false) {
             // FormData with file upload
             $userId = $_POST['userId'] ?? 0;
@@ -180,48 +169,28 @@ if ($method == 'GET') {
         }
 
         $attachmentPath = null;
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         // Handle file upload if present
         if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = __DIR__ . '/uploads/leave_docs/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
-<<<<<<< HEAD
-            
-            $fileName = $_FILES['attachment']['name'];
-            $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-            $allowedTypes = ['pdf', 'jpg', 'jpeg', 'png', 'gif'];
-            
-=======
 
             $fileName = $_FILES['attachment']['name'];
             $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
             $allowedTypes = ['pdf', 'jpg', 'jpeg', 'png', 'gif'];
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
             if (!in_array($fileExt, $allowedTypes)) {
                 http_response_code(400);
                 echo json_encode(["status" => "error", "message" => "Invalid file type. Allowed: PDF, JPG, PNG, GIF"]);
                 exit;
             }
-<<<<<<< HEAD
-            
-            // Generate unique filename
-            $newFileName = 'leave_' . $userId . '_' . time() . '.' . $fileExt;
-            $targetPath = $uploadDir . $newFileName;
-            
-=======
 
             // Generate unique filename
             $newFileName = 'leave_' . $userId . '_' . time() . '.' . $fileExt;
             $targetPath = $uploadDir . $newFileName;
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
             if (move_uploaded_file($_FILES['attachment']['tmp_name'], $targetPath)) {
                 $attachmentPath = 'api/uploads/leave_docs/' . $newFileName;
             } else {
@@ -271,8 +240,4 @@ if ($method == 'GET') {
 }
 
 $conn->close();
-<<<<<<< HEAD
 ?>
-=======
-?>
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
