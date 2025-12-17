@@ -81,7 +81,8 @@ export function Login({ onLogin }: LoginProps) {
                 else if (apiRole === 'staff') appRole = 'staff';
 
                 // You might want to store user info in context/local storage here
-                localStorage.setItem('currentUser', JSON.stringify(response.user));
+                const userWithRole = { ...response.user, role: apiRole };
+                localStorage.setItem('currentUser', JSON.stringify(userWithRole));
 
                 onLogin(appRole);
             } else {

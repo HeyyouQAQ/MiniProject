@@ -65,7 +65,7 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
 
   // Get role badge style
   const getRoleBadgeStyle = (role: string) => {
-    const roleLower = role?.toLowerCase() || '';
+    const roleLower = (role === 'Worker' ? 'Staff' : role)?.toLowerCase() || '';
     if (roleLower === 'hr' || roleLower === 'human resource') {
       return {
         backgroundColor: isDarkMode ? 'rgba(251, 191, 36, 0.2)' : '#fef3c7',
@@ -185,7 +185,7 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                 >
                   <option value="">Select Role</option>
                   {roles.map(r => (
-                    <option key={r.RoleID} value={r.RoleID}>{r.Type}</option>
+                    <option key={r.RoleID} value={r.RoleID}>{r.Type === 'Worker' ? 'Staff' : r.Type}</option>
                   ))}
                 </select>
               </div>
@@ -323,7 +323,7 @@ export function AccountCreation({ isDarkMode }: AccountManagementProps) {
                         className="inline-flex px-3 py-1 text-xs font-semibold rounded-full border"
                         style={getRoleBadgeStyle(user.role)}
                       >
-                        {user.role}
+                        {user.role === 'Worker' ? 'Staff' : user.role}
                       </span>
                     </td>
 

@@ -1,33 +1,27 @@
 <?php
-<<<<<<< HEAD
-require 'db_connect.php';
-=======
-// Suppress PHP errors from being output as HTML
+/*
+    Payroll API
+    - Handled by db_connect.php: Headers, CORS, OPTIONS request, DB Connection
+*/
+
+// Suppress errors to ensure clean JSON output
 error_reporting(0);
 ini_set('display_errors', 0);
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+require 'db_connect.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
-try {
-    require 'db_connect.php';
-} catch (Exception $e) {
-    echo json_encode(["status" => "error", "message" => "Database connection failed."]);
-    exit;
-}
-
+// At this point, $conn is available and headers are set.
+// Double check connection just in case db_connect.php logic changes
 if (!isset($conn) || $conn->connect_error) {
     echo json_encode(["status" => "error", "message" => "Database connection failed."]);
     exit;
 }
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
+
+header('Content-Type: application/json'); // db_connect doesn't set Content-Type explicitly often, good to keep or check.
+// Checking db_connect.php content from previous step:
+// It sets Access-Control items. It does NOT set Content-Type: application/json.
+// So we MUST set Content-Type.
+
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -43,20 +37,7 @@ if ($method == 'GET') {
         }
 
         $stmt = $conn->prepare("SELECT PayPeriodStart, PayPeriodEnd, TotalHours, GrossPay, Deductions, NetPay, Status FROM Payroll WHERE UserID = ? ORDER BY PayPeriodEnd DESC");
-<<<<<<< HEAD
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $result = $stmt->get_result();
         
-        $payrolls = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $payrolls[] = $row;
-            }
-        }
-        
-        echo json_encode(["status" => "success", "data" => $payrolls]);
-=======
         if ($stmt) {
             $stmt->bind_param("i", $userId);
             $stmt->execute();
@@ -72,7 +53,6 @@ if ($method == 'GET') {
         } else {
             echo json_encode(["status" => "error", "message" => "Query failed."]);
         }
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 
     } elseif ($action == 'get_all_payrolls') {
         $sql = "SELECT p.*, e.Name, r.Type as RoleName 
@@ -83,11 +63,11 @@ if ($method == 'GET') {
         $result = $conn->query($sql);
         $payrolls = [];
         if ($result) {
-<<<<<<< HEAD
-            while($row = $result->fetch_assoc()) {
-=======
             while ($row = $result->fetch_assoc()) {
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
+                // Formatting role name for frontend (optional, though frontend handles mapping too)
+                if (strtolower($row['RoleName']) == 'worker') {
+                    $row['RoleName'] = 'Staff';
+                }
                 $payrolls[] = $row;
             }
         }
@@ -98,22 +78,7 @@ if ($method == 'GET') {
     }
 } elseif ($method == 'POST') {
     if ($action == 'generate_payroll') {
-<<<<<<< HEAD
         $input = json_decode(file_get_contents('php://input'), true);
-        $startDate = $input['startDate'] ?? '';
-        $endDate = $input['endDate'] ?? '';
-
-        if (empty($startDate) || empty($endDate)) {
-            http_response_code(400);
-            echo json_encode(["status" => "error", "message" => "Start date and end date are required."]);
-            exit;
-        }
-
-        // Get all employees
-        $employeesResult = $conn->query("SELECT UserID, Name, HourlyRate, RoleID FROM Employee");
-=======
-        $rawInput = file_get_contents('php://input');
-        $input = json_decode($rawInput, true);
         if (!is_array($input)) {
             $input = [];
         }
@@ -122,99 +87,73 @@ if ($method == 'GET') {
         $startDate = isset($input['startDate']) && !empty($input['startDate']) ? $input['startDate'] : date('Y-m-01');
         $endDate = isset($input['endDate']) && !empty($input['endDate']) ? $input['endDate'] : date('Y-m-t');
 
-        // Get all employees (HourlyRate may not exist, so we use a default)
-        $employeesResult = $conn->query("SELECT UserID, Name, RoleID FROM Employee");
+        // Get all employees
+        $employeesResult = $conn->query("SELECT UserID, Name, HourlyRate, RoleID FROM Employee");
 
         if (!$employeesResult) {
             echo json_encode(["status" => "error", "message" => "Failed to fetch employees: " . $conn->error]);
             exit;
         }
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         $employees = [];
         while ($row = $employeesResult->fetch_assoc()) {
             $employees[] = $row;
         }
 
-<<<<<<< HEAD
-=======
-        if (count($employees) == 0) {
-            echo json_encode(["status" => "success", "message" => "No employees found.", "data" => []]);
-            exit;
-        }
-
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         $generatedPayrolls = [];
+        $idsToDelete = [];
 
+        // Clean up previous payrolls for this period (optional, or we can just upsert. But simple delete/insert is easier)
+        // For simplicity, we just insert. Duplicate checks might be needed in production.
+        
         foreach ($employees as $employee) {
             $userId = $employee['UserID'];
 
-<<<<<<< HEAD
-=======
-            // Get hourly rate from SystemConfiguration or use default
-            $defaultHourlyRate = 15; // Default RM15/hour
-            $rateResult = $conn->query("SELECT DefaultHourlyRate FROM SystemConfiguration LIMIT 1");
-            if ($rateResult && $rateRow = $rateResult->fetch_assoc()) {
-                if (isset($rateRow['DefaultHourlyRate']) && $rateRow['DefaultHourlyRate'] > 0) {
-                    $defaultHourlyRate = floatval($rateRow['DefaultHourlyRate']);
-                }
+            // Get hourly rate - try Employee specific rate first, then default
+            $hourlyRate = isset($employee['HourlyRate']) ? floatval($employee['HourlyRate']) : 15.00;
+            if ($hourlyRate <= 0) {
+                 // Fallback to system config if needed (or just keep 15 as hard fallback)
+                 $hourlyRate = 15.00; 
             }
-            $hourlyRate = $defaultHourlyRate;
 
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
             // Calculate total hours from attendance (using minutes for precision)
             $hoursStmt = $conn->prepare("SELECT SUM(TIMESTAMPDIFF(MINUTE, ClockInTime, ClockOutTime)) as TotalMinutes 
                                          FROM Attendance 
                                          WHERE UserID = ? AND WorkDate BETWEEN ? AND ? AND ClockInTime IS NOT NULL AND ClockOutTime IS NOT NULL");
-<<<<<<< HEAD
-=======
+            
+            if (!$hoursStmt) continue;
 
-            if (!$hoursStmt) {
-                continue; // Skip this employee if query fails
-            }
-
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
             $hoursStmt->bind_param("iss", $userId, $startDate, $endDate);
             $hoursStmt->execute();
             $hoursResult = $hoursStmt->get_result()->fetch_assoc();
             $totalMinutes = $hoursResult['TotalMinutes'] ?? 0;
             $totalHours = round($totalMinutes / 60, 2);
 
-<<<<<<< HEAD
-            if ($totalHours > 0) {
-                $grossPay = $totalHours * $employee['HourlyRate'];
-                $deductions = 0; // Placeholder for deductions logic
-                $netPay = $grossPay - $deductions;
-
-                $insertStmt = $conn->prepare("INSERT INTO Payroll (UserID, PayPeriodStart, PayPeriodEnd, TotalHours, GrossPay, Deductions, NetPay) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $insertStmt->bind_param("issdddd", $userId, $startDate, $endDate, $totalHours, $grossPay, $deductions, $netPay);
-                $insertStmt->execute();
-
-                $roleResult = $conn->query("SELECT Type FROM Role WHERE RoleID = " . $employee['RoleID'])->fetch_assoc();
-
-                $generatedPayrolls[] = [
-                    'Name' => $employee['Name'],
-                    'RoleName' => $roleResult['Type'],
-                    'TotalHours' => $totalHours,
-                    'GrossPay' => $grossPay,
-                    'Deductions' => $deductions,
-                    'NetPay' => $netPay
-                ];
-            }
-=======
-            // Include employees even with 0 hours
+            // Logic: Generate payroll entry even if 0 hours? Yes, showing 0 pay.
             $grossPay = $totalHours * $hourlyRate;
-            $deductions = 0;
+            $deductions = 0; // Placeholder
             $netPay = $grossPay - $deductions;
 
-            // Get role name
+            // Delete existing payroll for this user and period to avoid duplicates (Simple approach)
+            $deleteStmt = $conn->prepare("DELETE FROM Payroll WHERE UserID = ? AND PayPeriodStart = ? AND PayPeriodEnd = ?");
+            $deleteStmt->bind_param("iss", $userId, $startDate, $endDate);
+            $deleteStmt->execute();
+
+            // Insert new record
+            $insertStmt = $conn->prepare("INSERT INTO Payroll (UserID, PayPeriodStart, PayPeriodEnd, TotalHours, GrossPay, Deductions, NetPay, Status) VALUES (?, ?, ?, ?, ?, ?, ?, 'Generated')");
+            $insertStmt->bind_param("issdddd", $userId, $startDate, $endDate, $totalHours, $grossPay, $deductions, $netPay);
+            $insertStmt->execute();
+
+            // Fetch Role Name for response
             $roleName = 'Staff';
-            if (!empty($employee['RoleID'])) {
-                $roleQuery = $conn->query("SELECT Type FROM Role WHERE RoleID = " . intval($employee['RoleID']));
-                if ($roleQuery && $roleRow = $roleQuery->fetch_assoc()) {
-                    $roleName = $roleRow['Type'];
+            if ($employee['RoleID']) {
+                $roleResult = $conn->query("SELECT Type FROM Role WHERE RoleID = " . intval($employee['RoleID']));
+                if ($roleResult && $r = $roleResult->fetch_assoc()) {
+                     $roleName = $r['Type'];
                 }
             }
+            // Map Worker -> Staff for consistency
+            if (strtolower($roleName) == 'worker') $roleName = 'Staff';
 
             $generatedPayrolls[] = [
                 'Name' => $employee['Name'],
@@ -224,7 +163,6 @@ if ($method == 'GET') {
                 'Deductions' => $deductions,
                 'NetPay' => $netPay
             ];
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
         }
 
         echo json_encode(["status" => "success", "message" => "Payroll generated successfully.", "data" => $generatedPayrolls]);
@@ -238,8 +176,4 @@ if ($method == 'GET') {
 }
 
 $conn->close();
-<<<<<<< HEAD
 ?>
-=======
-?>
->>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd

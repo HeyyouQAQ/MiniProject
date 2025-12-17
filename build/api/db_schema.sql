@@ -5,7 +5,11 @@ CREATE TABLE IF NOT EXISTS Role (
 );
 
 -- Insert Default Roles
+<<<<<<< HEAD
 INSERT INTO Role (Type) VALUES ('Manager'), ('Worker'), ('HR')
+=======
+INSERT INTO Role (Type) VALUES ('Manager'), ('Staff'), ('HR')
+>>>>>>> 11e7a106ee88f153569f250a0719c260abf8d7bd
 ON DUPLICATE KEY UPDATE Type=Type; -- Avoids errors on re-run
 
 -- Employee Table
