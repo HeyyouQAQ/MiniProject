@@ -30,7 +30,7 @@ export function ManagerDashboard({ isDarkMode, onLogout }: ManagerDashboardProps
       case 'accounts':
         return <AccountManagement isDarkMode={localIsDarkMode} />;
       case 'financial-profile':
-        return <EmployeeFinancialProfile userRole="Manager" currentUserId={1} />; // TODO: Pass actual ID if available
+        return <EmployeeFinancialProfile userRole="Manager" currentUserId={1} isDarkMode={localIsDarkMode} />; // TODO: Pass actual ID if available
       default:
         return (
           <div className={`p-8 rounded-3xl text-center ${localIsDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>

@@ -205,7 +205,7 @@ export function HRDashboard({ onLogout }: HRDashboardProps) {
                     {activeSection === 'report' && <MonthlyReport isDarkMode={isDarkMode} />}
                     {activeSection === 'leave' && <LeaveProcessing isDarkMode={isDarkMode} />}
                     {activeSection === 'schedule' && <ScheduleManagement isDarkMode={isDarkMode} />}
-                    {activeSection === 'financial-profile' && <EmployeeFinancialProfile userRole="HR" currentUserId={3} />} {/* TODO: Pass actual ID */}
+                    {activeSection === 'financial-profile' && <EmployeeFinancialProfile userRole="HR" currentUserId={3} isDarkMode={isDarkMode} />} {/* TODO: Pass actual ID */}
                 </main>
             </div>
         </div>
