@@ -1,4 +1,4 @@
-import { Users, UserCheck, DollarSign, Activity } from 'lucide-react';
+import { Users, UserCheck, Activity } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
 
@@ -54,15 +54,6 @@ export function ManagerOverview({ isDarkMode }: ManagerOverviewProps) {
             iconColor: 'text-purple-600',
             darkColor: 'bg-purple-900 bg-opacity-30',
         },
-        {
-            title: 'Base Hourly Rate',
-            value: statsData?.baseSalary === 'N/A' ? 'N/A' : `RM ${statsData?.baseSalary || '0.00'}`,
-            change: 'See Config',
-            icon: DollarSign,
-            color: 'bg-yellow-50',
-            iconColor: 'text-yellow-600',
-            darkColor: 'bg-yellow-900 bg-opacity-30',
-        },
     ];
 
     const recentActivities = activitiesData.length > 0 ? activitiesData : [];
@@ -87,7 +78,7 @@ export function ManagerOverview({ isDarkMode }: ManagerOverviewProps) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     {stats.map((stat, idx) => {
                         const Icon = stat.icon;
                         return (

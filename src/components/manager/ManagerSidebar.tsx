@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, LogOut, CreditCard } from 'lucide-react';
 
 interface ManagerSidebarProps {
   activeSection: string;
@@ -14,6 +14,7 @@ export function ManagerSidebar({ activeSection, setActiveSection, isSidebarOpen,
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'accounts', label: 'Account Management', icon: Users },
     { id: 'system-config', label: 'System Configuration', icon: Settings },
+    { id: 'financial-profile', label: 'Employee Financial Profile', icon: CreditCard },
   ];
 
   const handleMenuClick = (id: string) => {

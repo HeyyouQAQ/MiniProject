@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Sidebar, MenuItem } from '../Sidebar';
 import { Header } from '../Header';
-import { DollarSign, Users, BarChart2, Umbrella, Calendar, LayoutDashboard, Clock, TrendingUp, UserCheck, FileText } from 'lucide-react';
+import { DollarSign, Users, BarChart2, Umbrella, Calendar, LayoutDashboard, Clock, TrendingUp, UserCheck, FileText, CreditCard } from 'lucide-react';
 import { Payroll } from './Payroll';
 import { RoleAssignment } from './RoleAssignment';
 import { MonthlyReport } from './MonthlyReport';
 import { LeaveProcessing } from './LeaveProcessing';
 import { ScheduleManagement } from './ScheduleManagement';
 import { AttendanceManagement } from './AttendanceManagement';
+import { EmployeeFinancialProfile } from '../finance/EmployeeFinancialProfile';
 import { fetchApi } from '../../utils/api';
 
 interface HRDashboardProps {
@@ -35,6 +36,7 @@ export function HRDashboard({ onLogout }: HRDashboardProps) {
         { id: 'report', label: 'Monthly Report', icon: BarChart2 },
         { id: 'leave', label: 'Process Leave', icon: Umbrella },
         { id: 'schedule', label: 'Schedule Management', icon: Calendar },
+        { id: 'financial-profile', label: 'Employee Financial Profile', icon: CreditCard },
     ];
 
     useEffect(() => {
@@ -203,6 +205,7 @@ export function HRDashboard({ onLogout }: HRDashboardProps) {
                     {activeSection === 'report' && <MonthlyReport isDarkMode={isDarkMode} />}
                     {activeSection === 'leave' && <LeaveProcessing isDarkMode={isDarkMode} />}
                     {activeSection === 'schedule' && <ScheduleManagement isDarkMode={isDarkMode} />}
+                    {activeSection === 'financial-profile' && <EmployeeFinancialProfile userRole="HR" currentUserId={3} />} {/* TODO: Pass actual ID */}
                 </main>
             </div>
         </div>

@@ -1,0 +1,1 @@
+2025-12-18 22:44:19 | Method: GET | Role: 'Manager' | ID: '0' | GET: {"requester_role":"Manager"}

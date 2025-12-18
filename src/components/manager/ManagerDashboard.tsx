@@ -4,6 +4,7 @@ import { ManagerHeader } from './ManagerHeader';
 import { ManagerOverview } from './ManagerOverview';
 import { SystemConfig } from './SystemConfig';
 import { AccountCreation as AccountManagement } from './AccountCreation';
+import { EmployeeFinancialProfile } from '../finance/EmployeeFinancialProfile';
 
 interface ManagerDashboardProps {
   isDarkMode: boolean;
@@ -28,6 +29,8 @@ export function ManagerDashboard({ isDarkMode, onLogout }: ManagerDashboardProps
         return <SystemConfig isDarkMode={localIsDarkMode} />;
       case 'accounts':
         return <AccountManagement isDarkMode={localIsDarkMode} />;
+      case 'financial-profile':
+        return <EmployeeFinancialProfile userRole="Manager" currentUserId={1} />; // TODO: Pass actual ID if available
       default:
         return (
           <div className={`p-8 rounded-3xl text-center ${localIsDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -46,7 +49,7 @@ export function ManagerDashboard({ isDarkMode, onLogout }: ManagerDashboardProps
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
         isDarkMode={localIsDarkMode}
-        onLogout={onLogout ?? (() => {})}
+        onLogout={onLogout ?? (() => { })}
       />
 
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">

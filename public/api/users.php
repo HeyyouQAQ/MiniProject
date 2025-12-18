@@ -2,6 +2,7 @@
 require 'db_connect.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
+file_put_contents(__DIR__ . '/debug_req_new.txt', "Method: $method\nURI: " . $_SERVER['REQUEST_URI'] . "\n", FILE_APPEND);
 
 // Handle GET requests (Read & Verify Token)
 if ($method == 'GET') {
@@ -50,6 +51,86 @@ if ($method == 'GET') {
             }
         }
         echo json_encode($roles);
+    
+    } elseif ($action == 'salary_setup') {
+        // SALARY SETUP GET LOGIC
+        $requesterRole = $_SERVER['HTTP_X_REQUESTER_ROLE'] ?? $_GET['requester_role'] ?? '';
+        $targetUserId = $_GET['user_id'] ?? null;
+
+        if ($targetUserId) {
+            // Fetch specific
+            $stmt = $conn->prepare("
+                SELECT 
+                    e.UserID, e.Name as FullName, e.Email, r.Type as Role,
+                    s.SetupID, s.BasicSalary, s.SalaryPerHour, s.FixedAllowance,
+                    s.BankName, s.BankAccountNumber, s.EPF_Account_No, s.Tax_Account_No,
+                    s.DefaultSpecialLeaveDays
+                FROM Employee e
+                JOIN Role r ON e.RoleID = r.RoleID
+                LEFT JOIN EmployeeSalarySetup s ON e.UserID = s.UserID
+                WHERE e.UserID = ?
+            ");
+            $stmt->bind_param("i", $targetUserId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $data = $result->fetch_assoc();
+
+            if (!$data) {
+                http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'User not found']);
+                exit;
+            }
+
+            // Permission Check
+            if ($requesterRole === 'HR' && $data['Role'] !== 'Staff') {
+                http_response_code(403);
+                echo json_encode(['status' => 'error', 'message' => 'Access Denied: HR can only view Staff profiles.']);
+                exit;
+            }
+
+            echo json_encode(['status' => 'success', 'data' => $data]);
+
+        } else {
+            // List all relevant employees
+            $query = "
+                SELECT 
+                    e.UserID, e.Name as FullName, e.Email, r.Type as Role,
+                    s.SetupID, s.BasicSalary
+                FROM Employee e
+                JOIN Role r ON e.RoleID = r.RoleID
+                LEFT JOIN EmployeeSalarySetup s ON e.UserID = s.UserID
+                WHERE 1=1
+            ";
+
+            if ($requesterRole === 'HR') {
+                $query .= " AND r.Type = 'Staff'";
+            } else if ($requesterRole === 'Manager') {
+                $query .= " AND r.Type IN ('Staff', 'HR')";
+            } else {
+                 // Default to empty if no role
+                 $query .= " AND 0";
+            }
+
+            $result = $conn->query($query);
+            $employees = [];
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $employees[] = $row;
+                }
+            }
+            echo json_encode(['status' => 'success', 'data' => $employees]);
+        }
+
+    } elseif ($action == 'debug_schema') {
+        $result = $conn->query("DESCRIBE EmployeeSalarySetup");
+        if ($result) {
+            echo "Table Exists (DEBUG). Columns:\n";
+            while ($row = $result->fetch_assoc()) {
+                echo $row['Field'] . " - " . $row['Type'] . "\n";
+            }
+        } else {
+            echo "Table Error: " . $conn->error;
+        }
 
     } else {
         // List Employees
@@ -84,6 +165,8 @@ if ($method == 'GET') {
     if (json_last_error() !== JSON_ERROR_NONE)
         $data = $_POST;
 
+    file_put_contents(__DIR__ . '/debug_req_new.txt', "Input: $input\nData: " . print_r($data, true) . "\n", FILE_APPEND);
+
     if (empty($data)) {
         http_response_code(400);
         echo json_encode(["status" => "error", "message" => "No data received."]);
@@ -91,6 +174,117 @@ if ($method == 'GET') {
     }
 
     $action = $_GET['action'] ?? '';
+
+    // ACTION: SALARY SETUP (UPSERT)
+    if ($action == 'salary_setup') {
+        $requesterRole = $_SERVER['HTTP_X_REQUESTER_ROLE'] ?? $_GET['requester_role'] ?? '';
+        $requesterId = $_SERVER['HTTP_X_REQUESTER_ID'] ?? $_GET['requester_id'] ?? 0;
+        
+        $targetUserId = $data['user_id'] ?? null;
+        file_put_contents(__DIR__ . '/debug_req_new.txt', "TargetUserID: " . var_export($targetUserId, true) . "\n", FILE_APPEND);
+
+        if (!$targetUserId) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'User ID required']);
+            exit;
+        }
+
+        // Check target user role
+        $stmt = $conn->prepare("SELECT r.Type as Role FROM Employee e JOIN Role r ON e.RoleID = r.RoleID WHERE e.UserID = ?");
+        $stmt->bind_param("i", $targetUserId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $targetUser = $res->fetch_assoc();
+        
+        file_put_contents(__DIR__ . '/debug_req_new.txt', "TargetUser: " . print_r($targetUser, true) . "\n", FILE_APPEND);
+
+        if (!$targetUser) {
+            http_response_code(404);
+            echo json_encode([
+                'status' => 'error', 
+                'message' => 'Target user not found'
+            ]);
+            exit;
+        }
+
+        // Permission Check
+        if ($requesterRole === 'HR' && $targetUser['Role'] !== 'Staff') {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'message' => 'Access Denied: HR can only modify Staff profiles.']);
+            exit;
+        }
+        if ($requesterRole === 'Manager' && !in_array($targetUser['Role'], ['Staff', 'HR'])) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'message' => 'Access Denied: Manager can only modify Staff and HR profiles.']);
+            exit;
+        }
+
+        // Upsert logic
+        $checkStmt = $conn->prepare("SELECT SetupID FROM EmployeeSalarySetup WHERE UserID = ?");
+        $checkStmt->bind_param("i", $targetUserId);
+        $checkStmt->execute();
+        $exists = $checkStmt->get_result()->fetch_assoc();
+
+        $basicSalary = $data['basic_salary'] ?? 0.00;
+        $salaryPerHour = $data['salary_per_hour'] ?? 0.00;
+        $fixedAllowance = $data['fixed_allowance'] ?? 0.00;
+        $bankName = $data['bank_name'] ?? '';
+        $bankAccountNumber = $data['bank_account_number'] ?? '';
+        $epfAccountNo = $data['epf_account_no'] ?? '';
+        $taxAccountNo = $data['tax_account_no'] ?? '';
+        $defaultSpecialLeaveDays = $data['default_special_leave_days'] ?? 0;
+        $updaterId = ($requesterId > 0) ? $requesterId : null;
+
+        if ($exists) {
+            // Update
+            $updateStmt = $conn->prepare("
+                UPDATE EmployeeSalarySetup SET
+                    BasicSalary = ?, SalaryPerHour = ?, FixedAllowance = ?,
+                    BankName = ?, BankAccountNumber = ?, EPF_Account_No = ?, Tax_Account_No = ?,
+                    DefaultSpecialLeaveDays = ?, LastUpdatedBy = ?
+                WHERE UserID = ?
+            ");
+            $updateStmt->bind_param("dddssssiii", 
+                $basicSalary, $salaryPerHour, $fixedAllowance, 
+                $bankName, $bankAccountNumber, $epfAccountNo, $taxAccountNo, 
+                $defaultSpecialLeaveDays, $updaterId, $targetUserId
+            );
+            
+            if ($updateStmt->execute()) {
+                echo json_encode(['status' => 'success', 'message' => 'Profile updated successfully']);
+            } else {
+                $error = $conn->error;
+                file_put_contents(__DIR__ . '/debug_hr_save_error.txt', "Update Failed: $error\nData: " . json_encode($data) . "\nRequester: $requesterId\n", FILE_APPEND);
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'Update failed: ' . $error]);
+            }
+
+        } else {
+            // Insert
+            $insertStmt = $conn->prepare("
+                INSERT INTO EmployeeSalarySetup (
+                    UserID, BasicSalary, SalaryPerHour, FixedAllowance, 
+                    BankName, BankAccountNumber, EPF_Account_No, Tax_Account_No, 
+                    DefaultSpecialLeaveDays, LastUpdatedBy
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $insertStmt->bind_param("idddssssii", 
+                $targetUserId, $basicSalary, $salaryPerHour, $fixedAllowance, 
+                $bankName, $bankAccountNumber, $epfAccountNo, $taxAccountNo, 
+                $defaultSpecialLeaveDays, $updaterId
+            );
+
+            if ($insertStmt->execute()) {
+                echo json_encode(['status' => 'success', 'message' => 'Profile created successfully']);
+            } else {
+                $error = $conn->error;
+                file_put_contents(__DIR__ . '/debug_hr_save_error.txt', "Insert Failed: $error\nData: " . json_encode($data) . "\nRequester: $requesterId\n", FILE_APPEND);
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'Insert failed: ' . $error]);
+            }
+        }
+        exit;
+    }
 
     // ACTION: LOGIN
     if ($action == 'login') {
@@ -162,7 +356,7 @@ if ($method == 'GET') {
             // Simulate Email
             $link = "http://localhost:3000/MiniProject/?token=" . $token;
             $emailContent = "To: $email\nSubject: Password Reset Request\n\nHello " . $row['Name'] . ",\n\nWe received a request to reset your password.\nClick here to reset it:\n$link\n\n(Link expires in 24 hours)\n----------------------------------------------------\n\n";
-            $logPath = 'c:/Users/bii wong/.gemini/MiniProjectyeow/MiniProject/simulated_emails.txt';
+            $logPath = __DIR__ . '/../../simulated_emails.txt';
             file_put_contents($logPath, $emailContent, FILE_APPEND);
         }
 
@@ -380,7 +574,7 @@ if ($method == 'GET') {
                 $link = "http://localhost:3000/MiniProject/?token=" . $token;
                 $emailContent = "To: $email\nSubject: Set your WcDonald's Password\n\nWelcome $name!\n\nPlease click the link below to set your password:\n$link\n\n(Link expires in 24 hours)\n----------------------------------------------------\n\n";
                 // Redirect to workspace for user visibility
-                $logPath = 'c:/Users/bii wong/.gemini/MiniProjectyeow/MiniProject/simulated_emails.txt';
+                $logPath = __DIR__ . '/../../simulated_emails.txt';
                 file_put_contents($logPath, $emailContent, FILE_APPEND);
                 echo json_encode(["status" => "success", "message" => "User created. Invitation sent (simulated).", "id" => $newId]);
             } else {

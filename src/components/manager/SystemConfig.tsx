@@ -16,10 +16,15 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
     defaultSickLeaveDays: '14',
     carryForwardLeaveLimit: '5',
     payrollCycleDay: '25',
-    otRatePerHour: '1.50',
+
+    otMultiplier: '1.50',
     minimumOTMinutes: '30',
     latePenaltyAmount: '5.00',
-    absencePenaltyAmount: '20.00',
+    absencePenaltyAmount: '50.00',
+    epfRateEmployee: '0.1100',
+    epfRateEmployer: '0.1300',
+    socsoRateEmployee: '0.0050',
+    socsoRateEmployer: '0.0175',
     minimumShiftBreakMins: '60',
     maxLateMinsAllowed: '10',
     maxDailyWorkingHours: '8',
@@ -41,10 +46,15 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
               defaultSickLeaveDays: data.systemConfig.defaultSickLeaveDays || '14',
               carryForwardLeaveLimit: data.systemConfig.carryForwardLeaveLimit || '5',
               payrollCycleDay: data.systemConfig.payrollCycleDay || '25',
-              otRatePerHour: data.systemConfig.otRatePerHour || '1.50',
+
+              otMultiplier: data.systemConfig.otMultiplier || '1.50',
               minimumOTMinutes: data.systemConfig.minimumOTMinutes || '30',
               latePenaltyAmount: data.systemConfig.latePenaltyAmount || '5.00',
-              absencePenaltyAmount: data.systemConfig.absencePenaltyAmount || '20.00',
+              absencePenaltyAmount: data.systemConfig.absencePenaltyAmount || '50.00',
+              epfRateEmployee: data.systemConfig.epfRateEmployee || '0.1100',
+              epfRateEmployer: data.systemConfig.epfRateEmployer || '0.1300',
+              socsoRateEmployee: data.systemConfig.socsoRateEmployee || '0.0050',
+              socsoRateEmployer: data.systemConfig.socsoRateEmployer || '0.0175',
               minimumShiftBreakMins: data.systemConfig.minimumShiftBreakMins || '60',
               maxLateMinsAllowed: data.systemConfig.maxLateMinsAllowed || '10',
               maxDailyWorkingHours: data.systemConfig.maxDailyWorkingHours || '8',
@@ -101,11 +111,17 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
       defaultSickLeaveDays: '14',
       carryForwardLeaveLimit: '5',
       payrollCycleDay: '25',
-      otRatePerHour: '1.50',
+
+      otMultiplier: '1.50',
       minimumOTMinutes: '30',
       latePenaltyAmount: '5.00',
-      absencePenaltyAmount: '20.00',
+      absencePenaltyAmount: '50.00',
+      epfRateEmployee: '0.1100',
+      epfRateEmployer: '0.1300',
+      socsoRateEmployee: '0.0050',
+      socsoRateEmployer: '0.0175',
       minimumShiftBreakMins: '60',
+
       maxLateMinsAllowed: '10',
       maxDailyWorkingHours: '8',
       maxWeeklyWorkingHours: '48',
@@ -251,7 +267,7 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
                         className={`w-full px-3 py-2 border rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
                     </div>
                     <div>
-                      <label className={`block mb-1 text-[10px] uppercase font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Carry Fwd</label>
+                      <label className={`block mb-1 text-[10px] uppercase font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Carry Forward</label>
                       <input type="number" value={config.carryForwardLeaveLimit} onChange={(e) => handleInputChange('carryForwardLeaveLimit', e.target.value)}
                         className={`w-full px-3 py-2 border rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
                     </div>
@@ -271,8 +287,8 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
                         className={`w-full px-3 py-2 border rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
                     </div>
                     <div>
-                      <label className={`block mb-1 text-[10px] uppercase font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>OT Rate / Hr</label>
-                      <input type="number" step="0.01" value={config.otRatePerHour} onChange={(e) => handleInputChange('otRatePerHour', e.target.value)}
+                      <label className={`block mb-1 text-[10px] uppercase font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>OT Multiplier (x)</label>
+                      <input type="number" step="0.01" value={config.otMultiplier} onChange={(e) => handleInputChange('otMultiplier', e.target.value)}
                         className={`w-full px-3 py-2 border rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
                     </div>
                     <div>
@@ -288,6 +304,36 @@ export function SystemConfig({ isDarkMode }: SystemConfigProps) {
                     <div className="col-span-2">
                       <label className={`block mb-1 text-[10px] uppercase font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Min OT Duration (Mins)</label>
                       <input type="number" value={config.minimumOTMinutes} onChange={(e) => handleInputChange('minimumOTMinutes', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: Statutory */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+                    <CreditCard className="w-4 h-4 text-purple-500" />
+                    <h4 className={`text-sm font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>Statutory Rates (0.00 - 1.00)</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={`block mb-1 text-[10px] uppercase font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>EPF Rate (Employee)</label>
+                      <input type="number" step="0.0001" value={config.epfRateEmployee} onChange={(e) => handleInputChange('epfRateEmployee', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
+                    </div>
+                    <div>
+                      <label className={`block mb-1 text-[10px] uppercase font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>EPF Rate (Employer)</label>
+                      <input type="number" step="0.0001" value={config.epfRateEmployer} onChange={(e) => handleInputChange('epfRateEmployer', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
+                    </div>
+                    <div>
+                      <label className={`block mb-1 text-[10px] uppercase font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>SOCSO Rate (Employee)</label>
+                      <input type="number" step="0.0001" value={config.socsoRateEmployee} onChange={(e) => handleInputChange('socsoRateEmployee', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
+                    </div>
+                    <div>
+                      <label className={`block mb-1 text-[10px] uppercase font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>SOCSO Rate (Employer)</label>
+                      <input type="number" step="0.0001" value={config.socsoRateEmployer} onChange={(e) => handleInputChange('socsoRateEmployer', e.target.value)}
                         className={`w-full px-3 py-2 border rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`} />
                     </div>
                   </div>
