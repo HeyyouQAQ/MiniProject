@@ -1,0 +1,9 @@
+Staff Role ID: 2
+HR Role ID: 3
+Calculated Stats:
+Array
+(
+    [staffCount] => 26
+    [hrCount] => 4
+    [totalUsers] => 32
+)

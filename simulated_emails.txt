@@ -220,3 +220,36 @@ http://localhost:3000/MiniProject/?token=13be162f79ba44fcfaf53ffc092508ed9739d4c
 (Link expires in 24 hours)
 ----------------------------------------------------
 
+To: ali@gmail
+Subject: Set your WcDonald's Password
+
+Welcome ali!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=e35127221ac55e5b253a7d29650053d0ca89bb42506f91e6a7e9a5f356a7f55d
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: qw
+Subject: Set your WcDonald's Password
+
+Welcome xxx!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=ea7a915f7c6ce456067e70dffdc215dcf18ec16587908ec5e4e497d967a894d3
+
+(Link expires in 24 hours)
+----------------------------------------------------
+
+To: abubub@geemel.cim
+Subject: Set your WcDonald's Password
+
+Welcome alibubb!
+
+Please click the link below to set your password:
+http://localhost:3000/MiniProject/?token=11b992f6bb1b8d0b47ec170894d4e6b695edbd74cc9b5bfc970ae4527df5d947
+
+(Link expires in 24 hours)
+----------------------------------------------------
+

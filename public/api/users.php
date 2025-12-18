@@ -53,7 +53,15 @@ if ($method == 'GET') {
 
     } else {
         // List Employees
-        $sql = "SELECT e.UserID, e.Name, e.Email, e.ContactNumber, e.HiringDate, r.Type as RoleName, e.RoleID 
+        $sql = "SELECT e.UserID as id, e.Name as fullName, e.Email as email, e.ICNumber as icNumber, 
+                       e.DateOfBirth as dateOfBirth, e.Gender as gender, e.ContactNumber as contactNumber, 
+                       e.Address as address, e.RoleID as roleId, e.Position as position, 
+                       e.EmploymentType as employmentType, e.HiringDate as hiringDate, 
+                       e.EmploymentStatus as status, r.Type as role,
+                       e.BankName as bankName, e.BankAccountNumber as bankAccountNumber, 
+                       e.EPFNumber as epfNumber, e.SOCSONumber as socsoNumber, e.EISNumber as eisNumber,
+                       e.FoodHandlerCertExpiry as foodHandlerCertExpiry, e.TyphoidExpiry as typhoidExpiry,
+                       e.EmergencyContactName as emergencyContactName, e.EmergencyContactNumber as emergencyContactNumber
                 FROM Employee e 
                 JOIN Role r ON e.RoleID = r.RoleID 
                 ORDER BY e.HiringDate DESC";
@@ -62,16 +70,7 @@ if ($method == 'GET') {
         $employees = [];
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
-                $employees[] = [
-                    'id' => $row['UserID'],
-                    'fullName' => $row['Name'],
-                    'email' => $row['Email'],
-                    'role' => $row['RoleName'],
-                    'roleId' => $row['RoleID'],
-                    'contactNumber' => $row['ContactNumber'],
-                    'hiringDate' => $row['HiringDate'],
-                    'status' => 'Active'
-                ];
+                $employees[] = $row;
             }
         }
         echo json_encode($employees);
@@ -226,13 +225,13 @@ if ($method == 'GET') {
 
         // If password provided in update
         if (isset($data['password']) && !empty($data['password'])) {
-            $sql = "UPDATE Employee SET Name=?, Email=?, RoleID=?, ContactNumber=?, PasswordHash=? WHERE UserID=?";
+            $sql = "UPDATE Employee SET Name=?, Email=?, RoleID=?, ContactNumber=?, PasswordHash=?, EmploymentStatus=? WHERE UserID=?";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssissi", $name, $email, $roleId, $contact, $data['password'], $id);
+            $stmt->bind_param("ssissii", $name, $email, $roleId, $contact, $data['password'], $data['employmentStatus'], $id);
         } else {
-            $sql = "UPDATE Employee SET Name=?, Email=?, RoleID=?, ContactNumber=? WHERE UserID=?";
+            $sql = "UPDATE Employee SET Name=?, Email=?, RoleID=?, ContactNumber=?, EmploymentStatus=? WHERE UserID=?";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssisi", $name, $email, $roleId, $contact, $id);
+            $stmt->bind_param("ssissi", $name, $email, $roleId, $contact, $data['employmentStatus'], $id);
         }
 
         if ($stmt->execute()) {
@@ -250,11 +249,36 @@ if ($method == 'GET') {
             exit;
         }
 
+        // Basic Info
         $name = $data['fullName'];
         $email = $data['email'];
-        $roleId = $data['roleId'] ?? 2;
+        $icNumber = $data['icNumber'] ?? '';
+        $dateOfBirth = $data['dateOfBirth'] ?? '1990-01-01';
+        $gender = $data['gender'] ?? 'Other';
         $contact = $data['contactNumber'] ?? '';
+        $address = $data['address'] ?? '';
+
+        // Employment Info
+        $roleId = $data['roleId'] ?? 2;
+        $position = $data['position'] ?? 'Staff';
+        $employmentType = $data['employmentType'] ?? 'Full-Time';
         $hiringDate = $data['hiringDate'] ?? date('Y-m-d');
+        $employmentStatus = $data['employmentStatus'] ?? 'Active';
+
+        // Bank Info
+        $bankName = $data['bankName'] ?? 'N/A';
+        $bankAccountNumber = $data['bankAccountNumber'] ?? 'N/A';
+        $epfNumber = $data['epfNumber'] ?? '';
+        $socsoNumber = $data['socsoNumber'] ?? '';
+        $eisNumber = $data['eisNumber'] ?? '';
+
+        // Certifications
+        $foodHandlerCertExpiry = !empty($data['foodHandlerCertExpiry']) ? $data['foodHandlerCertExpiry'] : null;
+        $typhoidExpiry = !empty($data['typhoidExpiry']) ? $data['typhoidExpiry'] : null;
+
+        // Emergency Contact
+        $emergencyContactName = $data['emergencyContactName'] ?? '';
+        $emergencyContactNumber = $data['emergencyContactNumber'] ?? '';
 
         $password = $data['password'] ?? '';
 
@@ -269,13 +293,13 @@ if ($method == 'GET') {
             $password = ''; // No password initially
         }
 
-        // Check Duplicate (Email OR Name)
-        $checkStmt = $conn->prepare("SELECT UserID FROM Employee WHERE Email = ? OR Name = ?");
-        $checkStmt->bind_param("ss", $email, $name);
+        // Check Duplicate (Email OR IC Number)
+        $checkStmt = $conn->prepare("SELECT UserID FROM Employee WHERE Email = ? OR ICNumber = ?");
+        $checkStmt->bind_param("ss", $email, $icNumber);
         $checkStmt->execute();
         if ($checkStmt->get_result()->num_rows > 0) {
             http_response_code(400);
-            echo json_encode(["status" => "error", "message" => "Email or Username already exists"]);
+            echo json_encode(["status" => "error", "message" => "Email or IC Number already exists"]);
             exit;
         }
 
@@ -291,7 +315,7 @@ if ($method == 'GET') {
         // Function helper
         $add = function ($cols, $val, $type) use ($columns, &$insertData, &$types) {
             foreach ((array) $cols as $c) {
-                if (in_array($c, $columns)) {
+                if (in_array($c, $columns) && $val !== null && $val !== '') {
                     $insertData[$c] = $val;
                     $types .= $type;
                     return;
@@ -299,11 +323,38 @@ if ($method == 'GET') {
             }
         };
 
+        // Basic Info
         $add(['Name', 'FullName'], $name, 's');
         $add(['Email'], $email, 's');
-        $add(['RoleID'], $roleId, 'i');
+        $add(['ICNumber'], $icNumber, 's');
+        $add(['DateOfBirth'], $dateOfBirth, 's');
+        $add(['Gender'], $gender, 's');
         $add(['ContactNumber'], $contact, 's');
+        $add(['Address'], $address, 's');
+
+        // Employment Info
+        $add(['RoleID'], $roleId, 'i');
+        $add(['Position'], $position, 's');
+        $add(['EmploymentType'], $employmentType, 's');
         $add(['HiringDate'], $hiringDate, 's');
+        $add(['EmploymentStatus'], $employmentStatus, 's');
+
+        // Bank Info
+        $add(['BankName'], $bankName, 's');
+        $add(['BankAccountNumber'], $bankAccountNumber, 's');
+        $add(['EPFNumber'], $epfNumber, 's');
+        $add(['SOCSONumber'], $socsoNumber, 's');
+        $add(['EISNumber'], $eisNumber, 's');
+
+        // Certifications
+        $add(['FoodHandlerCertExpiry'], $foodHandlerCertExpiry, 's');
+        $add(['TyphoidExpiry'], $typhoidExpiry, 's');
+
+        // Emergency Contact
+        $add(['EmergencyContactName'], $emergencyContactName, 's');
+        $add(['EmergencyContactNumber'], $emergencyContactNumber, 's');
+
+        // Password
         $add(['Password', 'PasswordHash'], $password, 's');
 
         // Add Token columns if they exist

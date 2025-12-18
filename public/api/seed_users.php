@@ -4,7 +4,7 @@ require 'db_connect.php';
 echo "<h2>Seeding Default Users</h2>";
 
 // Helper function to create/update user
-function seedUser($conn, $name, $email, $roleType, $password)
+function seedUser($conn, $name, $email, $roleType, $password, $icNumber = null)
 {
     // Get RoleID
     $roleStmt = $conn->prepare("SELECT RoleID FROM Role WHERE Type = ?");
@@ -37,10 +37,19 @@ function seedUser($conn, $name, $email, $roleType, $password)
         $stmt->execute();
         echo "Updated User: $name (Password set to '$password')<br>";
     } else {
-        // Create new user
+        // Create new user with all required fields
         $date = date('Y-m-d');
-        $stmt = $conn->prepare("INSERT INTO Employee (Name, Email, PasswordHash, RoleID, HiringDate) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssis", $name, $email, $validPassword, $roleId, $date);
+        $dob = '1990-01-01';
+        $icNum = $icNumber ?? 'IC' . str_pad(rand(10000000, 99999999), 8, '0', STR_PAD_LEFT);
+        $contact = '012-0000000';
+        
+        $stmt = $conn->prepare("INSERT INTO Employee (
+            Name, Email, PasswordHash, RoleID, HiringDate,
+            ICNumber, DateOfBirth, Gender, ContactNumber,
+            Position, EmploymentType, EmploymentStatus,
+            BankName, BankAccountNumber
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Other', ?, 'Staff', 'Full-Time', 'Active', 'N/A', 'N/A')");
+        $stmt->bind_param("sssississs", $name, $email, $validPassword, $roleId, $date, $icNum, $dob, $contact);
         $stmt->execute();
         echo "Created User: $name (Password: '$password')<br>";
     }

@@ -6,7 +6,7 @@ import { Payroll } from './Payroll';
 import { RoleAssignment } from './RoleAssignment';
 import { MonthlyReport } from './MonthlyReport';
 import { LeaveProcessing } from './LeaveProcessing';
-import { ScheduleGen } from './ScheduleGen';
+import { ScheduleManagement } from './ScheduleManagement';
 import { AttendanceManagement } from './AttendanceManagement';
 import { fetchApi } from '../../utils/api';
 
@@ -34,7 +34,7 @@ export function HRDashboard({ onLogout }: HRDashboardProps) {
         { id: 'roles', label: 'Role Assignment', icon: Users },
         { id: 'report', label: 'Monthly Report', icon: BarChart2 },
         { id: 'leave', label: 'Process Leave', icon: Umbrella },
-        { id: 'schedule', label: 'Generate Schedule', icon: Calendar },
+        { id: 'schedule', label: 'Schedule Management', icon: Calendar },
     ];
 
     useEffect(() => {
@@ -202,7 +202,7 @@ export function HRDashboard({ onLogout }: HRDashboardProps) {
                     {activeSection === 'roles' && <RoleAssignment isDarkMode={isDarkMode} />}
                     {activeSection === 'report' && <MonthlyReport isDarkMode={isDarkMode} />}
                     {activeSection === 'leave' && <LeaveProcessing isDarkMode={isDarkMode} />}
-                    {activeSection === 'schedule' && <ScheduleGen isDarkMode={isDarkMode} />}
+                    {activeSection === 'schedule' && <ScheduleManagement isDarkMode={isDarkMode} />}
                 </main>
             </div>
         </div>

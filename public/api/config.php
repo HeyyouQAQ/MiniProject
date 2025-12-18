@@ -1,4 +1,8 @@
 <?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json; charset=UTF-8");
+
 require_once 'db_connect.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -11,21 +15,35 @@ if ($method == 'GET') {
 
     $confSql = "SELECT * FROM SystemConfiguration LIMIT 1";
     $confRes = $conn->query($confSql);
-    if ($confRes->num_rows > 0) {
+    if ($confRes && $confRes->num_rows > 0) {
         $row = $confRes->fetch_assoc();
-        $configData['configId'] = $row['ConfigID'];
-        $configData['defaultAnnualLeaveDays'] = $row['DefaultAnnualLeaveDays'];
-        $configData['payrollCycleDay'] = $row['PayrollCycleDay'];
-        $configData['qrTokenExportMins'] = $row['QR_TOKEN_Export_Mins'];
-        $configData['minimumShiftBreakMins'] = $row['MinimumShiftBreakMins'];
-        $configData['latePenaltyAmount'] = isset($row['LatePenaltyAmount']) ? $row['LatePenaltyAmount'] : '5.00';
-        $configData['defaultHourlyRate'] = isset($row['DefaultHourlyRate']) ? $row['DefaultHourlyRate'] : '15.00';
+        
+        // Leave Config
+        $configData['defaultAnnualLeaveDays'] = $row['DefaultAnnualLeaveDays'] ?? 15;
+        $configData['defaultSickLeaveDays'] = $row['DefaultSickLeaveDays'] ?? 14;
+        $configData['carryForwardLeaveLimit'] = $row['CarryForwardLeaveLimit'] ?? 5;
+
+        // Payroll Config
+        $configData['payrollCycleDay'] = $row['PayrollCycleDay'] ?? 25;
+        $configData['otRatePerHour'] = $row['OT_Rate_Per_Hour'] ?? 1.50;
+        $configData['minimumOTMinutes'] = $row['MinimumOTMinutes'] ?? 30;
+        $configData['latePenaltyAmount'] = $row['LatePenaltyAmount'] ?? 5.00;
+        $configData['absencePenaltyAmount'] = $row['AbsencePenaltyAmount'] ?? 20.00;
+
+        // Attendance Rules
+        $configData['minimumShiftBreakMins'] = $row['MinimumShiftBreakMins'] ?? 60;
+        $configData['maxLateMinsAllowed'] = $row['MaxLateMinsAllowed'] ?? 10;
+
+        // Shift Rules
+        $configData['maxDailyWorkingHours'] = $row['MaxDailyWorkingHours'] ?? 8;
+        $configData['maxWeeklyWorkingHours'] = $row['MaxWeeklyWorkingHours'] ?? 48;
+        $configData['minimumShiftHours'] = $row['MinimumShiftHours'] ?? 4;
     }
 
     $rulesData = [];
     $ruleSql = "SELECT * FROM OvertimeRules";
     $ruleRes = $conn->query($ruleSql);
-    if ($ruleRes->num_rows > 0) {
+    if ($ruleRes && $ruleRes->num_rows > 0) {
         while ($r = $ruleRes->fetch_assoc()) {
             $rulesData[] = [
                 'ruleId' => $r['RuleID'],
@@ -48,7 +66,7 @@ if ($method == 'GET') {
         // Update System Config
         if (isset($data['systemConfig'])) {
             $sc = $data['systemConfig'];
-            $modifierId = 1;
+            $modifierId = 1; // Default to System Admin if not authenticated
 
             // --- SELF-HEAL: Ensure Modifier Exists ---
             $uCheck = $conn->query("SELECT UserID FROM Employee WHERE UserID = $modifierId");
@@ -70,51 +88,72 @@ if ($method == 'GET') {
 
             // Check if config exists
             $check = $conn->query("SELECT ConfigID FROM SystemConfiguration LIMIT 1");
-            if ($check->num_rows > 0) {
+            if ($check && $check->num_rows > 0) {
                 $row = $check->fetch_assoc();
                 $confId = $row['ConfigID'];
 
-                $stmt = $conn->prepare("UPDATE SystemConfiguration SET DefaultAnnualLeaveDays=?, PayrollCycleDay=?, QR_TOKEN_Export_Mins=?, MinimumShiftBreakMins=?, LatePenaltyAmount=?, DefaultHourlyRate=?, LastModifiedBy=? WHERE ConfigID=?");
-                if (!$stmt) {
-                    throw new Exception("Prepare failed: " . $conn->error);
-                }
-                $defaultHourlyRate = isset($sc['defaultHourlyRate']) ? floatval($sc['defaultHourlyRate']) : 15.00;
-                // types: i (annual), i (payroll), i (qr), i (break), d (penalty), d (hourlyRate), i (modifier), i (confId)
+                $stmt = $conn->prepare("UPDATE SystemConfiguration SET 
+                    DefaultAnnualLeaveDays=?, DefaultSickLeaveDays=?, CarryForwardLeaveLimit=?,
+                    PayrollCycleDay=?, OT_Rate_Per_Hour=?, MinimumOTMinutes=?, LatePenaltyAmount=?, AbsencePenaltyAmount=?,
+                    MinimumShiftBreakMins=?, MaxLateMinsAllowed=?,
+                    MaxDailyWorkingHours=?, MaxWeeklyWorkingHours=?, MinimumShiftHours=?,
+                    LastModifiedBy=? 
+                    WHERE ConfigID=?");
+                
+                if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
+                
                 $stmt->bind_param(
-                    "iiiiddii",
+                    "iiiididddiiiiii",
                     $sc['defaultAnnualLeaveDays'],
+                    $sc['defaultSickLeaveDays'],
+                    $sc['carryForwardLeaveLimit'],
                     $sc['payrollCycleDay'],
-                    $sc['qrTokenExportMins'],
-                    $sc['minimumShiftBreakMins'],
+                    $sc['otRatePerHour'],
+                    $sc['minimumOTMinutes'],
                     $sc['latePenaltyAmount'],
-                    $defaultHourlyRate,
+                    $sc['absencePenaltyAmount'],
+                    $sc['minimumShiftBreakMins'],
+                    $sc['maxLateMinsAllowed'],
+                    $sc['maxDailyWorkingHours'],
+                    $sc['maxWeeklyWorkingHours'],
+                    $sc['minimumShiftHours'],
                     $modifierId,
                     $confId
                 );
-                if (!$stmt->execute()) {
-                    throw new Exception("Update Config failed: " . $stmt->error);
-                }
+                
+                if (!$stmt->execute()) throw new Exception("Update Config failed: " . $stmt->error);
+
             } else {
                 // Insert
-                $stmt = $conn->prepare("INSERT INTO SystemConfiguration (DefaultAnnualLeaveDays, PayrollCycleDay, QR_TOKEN_Export_Mins, MinimumShiftBreakMins, LatePenaltyAmount, DefaultHourlyRate, LastModifiedBy) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                if (!$stmt) {
-                    throw new Exception("Prepare failed: " . $conn->error);
-                }
-                $defaultHourlyRate = isset($sc['defaultHourlyRate']) ? floatval($sc['defaultHourlyRate']) : 15.00;
-                // types: i, i, i, i, d, d, i
+                $stmt = $conn->prepare("INSERT INTO SystemConfiguration (
+                    DefaultAnnualLeaveDays, DefaultSickLeaveDays, CarryForwardLeaveLimit,
+                    PayrollCycleDay, OT_Rate_Per_Hour, MinimumOTMinutes, LatePenaltyAmount, AbsencePenaltyAmount,
+                    MinimumShiftBreakMins, MaxLateMinsAllowed,
+                    MaxDailyWorkingHours, MaxWeeklyWorkingHours, MinimumShiftHours,
+                    LastModifiedBy
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                
+                if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
+                
                 $stmt->bind_param(
-                    "iiiiddi",
+                    "iiiididddiiiii",
                     $sc['defaultAnnualLeaveDays'],
+                    $sc['defaultSickLeaveDays'],
+                    $sc['carryForwardLeaveLimit'],
                     $sc['payrollCycleDay'],
-                    $sc['qrTokenExportMins'],
-                    $sc['minimumShiftBreakMins'],
+                    $sc['otRatePerHour'],
+                    $sc['minimumOTMinutes'],
                     $sc['latePenaltyAmount'],
-                    $defaultHourlyRate,
+                    $sc['absencePenaltyAmount'],
+                    $sc['minimumShiftBreakMins'],
+                    $sc['maxLateMinsAllowed'],
+                    $sc['maxDailyWorkingHours'],
+                    $sc['maxWeeklyWorkingHours'],
+                    $sc['minimumShiftHours'],
                     $modifierId
                 );
-                if (!$stmt->execute()) {
-                    throw new Exception("Insert Config failed: " . $stmt->error);
-                }
+                
+                if (!$stmt->execute()) throw new Exception("Insert Config failed: " . $stmt->error);
             }
         }
 

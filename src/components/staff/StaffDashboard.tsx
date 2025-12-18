@@ -4,7 +4,7 @@ import { Header } from '../Header';
 import { Schedule } from '../Schedule';
 import { StatsCards } from '../StatsCards';
 import { ChatBot } from '../ChatBot';
-import { Clock, Bell, MessageCircle, DollarSign, Umbrella, LayoutDashboard, Users } from 'lucide-react';
+import { Clock, Calendar, DollarSign, Umbrella, LayoutDashboard, Users } from 'lucide-react';
 import { fetchApi } from '../../utils/api';
 import { LeaveApplication } from './LeaveApplication';
 import { Payroll } from './Payroll';
@@ -176,8 +176,7 @@ export function StaffDashboard({ onLogout }: StaffDashboardProps) {
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'clock-in', label: 'Clock In/Out', icon: Clock },
         { id: 'payroll', label: 'Payroll', icon: DollarSign },
-        { id: 'announcement', label: 'Announcement', icon: Bell },
-        { id: 'chats', label: 'Chats @ Schedule', icon: MessageCircle },
+        { id: 'schedule', label: 'Schedule', icon: Calendar },
         { id: 'leave', label: 'Leave', icon: Umbrella },
     ];
 
@@ -237,35 +236,9 @@ export function StaffDashboard({ onLogout }: StaffDashboardProps) {
 
                     {activeSection === 'payroll' && <Payroll isDarkMode={isDarkMode} />}
 
-                    {activeSection === 'announcement' && (
-                        <div>
-                            <h2 className={`mb-6 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Announcements</h2>
-                            <div className="space-y-4">
-                                {[
-                                    { title: 'Holiday Schedule Updated', date: 'Dec 8, 2025', content: 'Please check your schedule for holiday shifts.' },
-                                    { title: 'New Uniforms Available', date: 'Dec 5, 2025', content: 'Pick up your new uniform from the manager office.' },
-                                    { title: 'Staff Meeting - Dec 15', date: 'Dec 3, 2025', content: 'Monthly staff meeting at 3 PM in the break room.' },
-                                ].map((item, idx) => (
-                                    <div key={idx} className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className={`transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>{item.title}</h3>
-                                            <span className={`text-sm transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{item.date}</span>
-                                        </div>
-                                        <p className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{item.content}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
-                    {activeSection === 'chats' && (
-                        <div>
-                            <h2 className={`mb-6 transition-colors duration-500 ${isDarkMode ? 'text-white' : ''}`}>Team Chats</h2>
-                            <div className={`rounded-lg shadow-sm p-6 transition-colors duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                <p className={`transition-colors duration-500 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Chat feature coming soon...</p>
-                            </div>
-                        </div>
-                    )}
+
+                    {activeSection === 'schedule' && <Schedule isDarkMode={isDarkMode} />}
 
 
 

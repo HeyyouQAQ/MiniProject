@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 require_once 'db_connect.php';
 
 // Stats
@@ -42,20 +44,31 @@ $stats['pendingLeaves'] = $row['c'];
 
 // Employees Clocked In Today (total who worked today - includes those who clocked out)
 $today = date('Y-m-d');
-$res = $conn->query("SELECT COUNT(DISTINCT UserID) as c FROM Attendance WHERE WorkDate = '$today' AND ClockInTime IS NOT NULL");
+$res = $conn->query("SELECT COUNT(DISTINCT UserID) as c FROM Attendance WHERE DATE(ClockIn) = '$today' AND ClockIn IS NOT NULL");
 $row = $res->fetch_assoc();
 $stats['clockedInToday'] = $row['c'];
 
 // Employees Clocked Out Today (completed their shift)
-$res = $conn->query("SELECT COUNT(DISTINCT UserID) as c FROM Attendance WHERE WorkDate = '$today' AND ClockInTime IS NOT NULL AND ClockOutTime IS NOT NULL");
+$res = $conn->query("SELECT COUNT(DISTINCT UserID) as c FROM Attendance WHERE DATE(ClockIn) = '$today' AND ClockIn IS NOT NULL AND ClockOut IS NOT NULL");
 $row = $res->fetch_assoc();
 $stats['clockedOutToday'] = $row['c'];
 
 // Total employees for HR dashboard
 $stats['totalEmployees'] = $stats['totalUsers'];
 
-// Not using base Salary anymore
-$stats['baseSalary'] = 'N/A';
+// Fetch Base Hourly Rate from SystemConfiguration (with error handling)
+$stats['baseSalary'] = '15.00'; // Default
+try {
+    $configRes = @$conn->query("SELECT DefaultHourlyRate FROM SystemConfiguration LIMIT 1");
+    if ($configRes && $configRes->num_rows > 0) {
+        $configRow = $configRes->fetch_assoc();
+        if (isset($configRow['DefaultHourlyRate'])) {
+            $stats['baseSalary'] = number_format((float)$configRow['DefaultHourlyRate'], 2);
+        }
+    }
+} catch (Exception $e) {
+    // Silently fail, use default
+}
 
 
 // Recent Activities? 
@@ -81,9 +94,15 @@ if ($res->num_rows > 0) {
 }
 
 
+// Debugging: return calculator stats in response
 echo json_encode([
     "stats" => $stats,
-    "activities" => $activities
+    "activities" => $activities,
+    "debug_info" => [
+        "staff_role_id" => $staffRoleId,
+        "hr_role_id" => $hrRoleId,
+        "raw_stats" => $stats
+    ]
 ]);
 
 $conn->close();

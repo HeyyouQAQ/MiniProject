@@ -1,4 +1,4 @@
-import { Bell, User, Menu, Moon, Sun } from 'lucide-react';
+import { User, Menu, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface HeaderProps {
@@ -86,10 +86,6 @@ export function Header({ isSidebarOpen, setIsSidebarOpen, isDarkMode, setIsDarkM
             </div>
           </button>
 
-          <button className={`relative p-2 rounded-lg transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
-            <Bell className={`w-5 h-5 transition-colors duration-500 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full animate-pulse" />
-          </button>
 
           <div className={`hidden sm:flex items-center gap-3 pl-4 border-l transition-colors duration-500 ${isDarkMode ? 'border-gray-700' : ''}`}>
             <div className="text-right hidden md:block">

@@ -112,7 +112,7 @@ export function Payroll({ isDarkMode }: PayrollProps) {
                             <Users className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                         </div>
                         <div>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Employees</p>
+                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Staff</p>
                             <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{payrolls.length}</p>
                         </div>
                     </div>
@@ -167,7 +167,7 @@ export function Payroll({ isDarkMode }: PayrollProps) {
             {/* Payroll Table */}
             <div className={cardClass}>
                 <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Employee Payroll Details
+                    Staff Payroll Details
                 </h3>
 
                 {isLoading ? (

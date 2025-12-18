@@ -1,0 +1,17 @@
+Deep Database Debug
+
+Roles Table:
+ID: 3 - Type: 'HR'
+ID: 1 - Type: 'Manager'
+ID: 2 - Type: 'Staff'
+
+Employee Counts by RoleID:
+RoleID: 1 - Count: 2
+RoleID: 2 - Count: 26
+RoleID: 3 - Count: 4
+
+Testing dashboard.php Logic:
+Searching for 'Staff': 2
+Searching for 'Worker': NOT FOUND
+Searching for 'HR': 3
+Searching for 'Manager': 1

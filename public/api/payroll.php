@@ -55,10 +55,12 @@ if ($method == 'GET') {
         }
 
     } elseif ($action == 'get_all_payrolls') {
+        // Only show Staff/Worker payrolls
         $sql = "SELECT p.*, e.Name, r.Type as RoleName 
                 FROM Payroll p
                 JOIN Employee e ON p.UserID = e.UserID
                 LEFT JOIN Role r ON e.RoleID = r.RoleID
+                WHERE r.Type = 'Staff' OR r.Type = 'Worker'
                 ORDER BY p.PayPeriodEnd DESC, e.Name ASC";
         $result = $conn->query($sql);
         $payrolls = [];
@@ -87,8 +89,20 @@ if ($method == 'GET') {
         $startDate = isset($input['startDate']) && !empty($input['startDate']) ? $input['startDate'] : date('Y-m-01');
         $endDate = isset($input['endDate']) && !empty($input['endDate']) ? $input['endDate'] : date('Y-m-t');
 
-        // Get all employees
-        $employeesResult = $conn->query("SELECT UserID, Name, HourlyRate, RoleID FROM Employee");
+        // Get Staff/Worker role ID
+        $staffRoleRes = $conn->query("SELECT RoleID FROM Role WHERE Type = 'Staff' OR Type = 'Worker'");
+        $staffRoleIds = [];
+        while ($r = $staffRoleRes->fetch_assoc()) {
+            $staffRoleIds[] = $r['RoleID'];
+        }
+        
+        // Get only Staff employees
+        if (count($staffRoleIds) > 0) {
+            $roleIdList = implode(',', $staffRoleIds);
+            $employeesResult = $conn->query("SELECT UserID, Name, HourlyRate, RoleID FROM Employee WHERE RoleID IN ($roleIdList)");
+        } else {
+            $employeesResult = $conn->query("SELECT UserID, Name, HourlyRate, RoleID FROM Employee");
+        }
 
         if (!$employeesResult) {
             echo json_encode(["status" => "error", "message" => "Failed to fetch employees: " . $conn->error]);

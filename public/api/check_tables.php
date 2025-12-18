@@ -1,18 +1,21 @@
 <?php
 require 'db_connect.php';
 
-function checkTable($conn, $tableName) {
-    echo "<h3>$tableName</h3>";
-    $result = $conn->query("SHOW COLUMNS FROM $tableName");
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            echo $row['Field'] . " - " . $row['Type'] . "<br>";
-        }
-    } else {
-        echo "Error showing columns for $tableName: " . $conn->error;
+echo "Tables in DB:\n";
+$res = $conn->query("SHOW TABLES");
+if ($res) {
+    while($row = $res->fetch_array()) {
+        echo $row[0] . "\n";
     }
 }
 
-checkTable($conn, 'LeaveApplication');
-checkTable($conn, 'Payroll');
+echo "\nDescribing Attendance:\n";
+$res = $conn->query("DESCRIBE Attendance");
+if ($res) {
+    while($row = $res->fetch_assoc()) {
+        print_r($row);
+    }
+} else {
+    echo "Error describing Attendance: " . $conn->error;
+}
 ?>

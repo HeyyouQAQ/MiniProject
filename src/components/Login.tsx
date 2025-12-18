@@ -105,7 +105,7 @@ export function Login({ onLogin }: LoginProps) {
                         <div className="brand-header">
                             <div className="logo-circle">M</div>
                             <div>
-                                <h1>WcDonald System</h1>
+                                <h1>WcDonald Portal</h1>
                                 <p>Staff Portal</p>
                             </div>
                         </div>
