@@ -233,24 +233,55 @@ if ($method == 'GET') {
         $epfAccountNo = $data['epf_account_no'] ?? '';
         $taxAccountNo = $data['tax_account_no'] ?? '';
         $defaultSpecialLeaveDays = $data['default_special_leave_days'] ?? 0;
-        $updaterId = ($requesterId > 0) ? $requesterId : null;
+        // Use NULL for LastUpdatedBy if requesterId is 0 to avoid FK constraint violation
+        $updaterId = ($requesterId > 0) ? (int)$requesterId : null;
+
+        // Verify updater exists to prevent FK violation
+        if ($updaterId) {
+            $checkUpdater = $conn->prepare("SELECT UserID FROM Employee WHERE UserID = ?");
+            $checkUpdater->bind_param("i", $updaterId);
+            $checkUpdater->execute();
+            if (!$checkUpdater->get_result()->fetch_assoc()) {
+                $updaterId = null;
+            }
+        }
 
         if ($exists) {
-            // Update
-            $updateStmt = $conn->prepare("
-                UPDATE EmployeeSalarySetup SET
-                    BasicSalary = ?, SalaryPerHour = ?, FixedAllowance = ?,
-                    BankName = ?, BankAccountNumber = ?, EPF_Account_No = ?, Tax_Account_No = ?,
-                    DefaultSpecialLeaveDays = ?, LastUpdatedBy = ?
-                WHERE UserID = ?
-            ");
-            $updateStmt->bind_param("dddssssiii", 
-                $basicSalary, $salaryPerHour, $fixedAllowance, 
-                $bankName, $bankAccountNumber, $epfAccountNo, $taxAccountNo, 
-                $defaultSpecialLeaveDays, $updaterId, $targetUserId
-            );
+            // Update - use different query if updaterId is null
+            if ($updaterId === null) {
+                $updateStmt = $conn->prepare("
+                    UPDATE EmployeeSalarySetup SET
+                        BasicSalary = ?, SalaryPerHour = ?, FixedAllowance = ?,
+                        BankName = ?, BankAccountNumber = ?, EPF_Account_No = ?, Tax_Account_No = ?,
+                        DefaultSpecialLeaveDays = ?, LastUpdatedBy = NULL
+                    WHERE UserID = ?
+                ");
+                $updateStmt->bind_param("dddssssii", 
+                    $basicSalary, $salaryPerHour, $fixedAllowance, 
+                    $bankName, $bankAccountNumber, $epfAccountNo, $taxAccountNo, 
+                    $defaultSpecialLeaveDays, $targetUserId
+                );
+            } else {
+                $updateStmt = $conn->prepare("
+                    UPDATE EmployeeSalarySetup SET
+                        BasicSalary = ?, SalaryPerHour = ?, FixedAllowance = ?,
+                        BankName = ?, BankAccountNumber = ?, EPF_Account_No = ?, Tax_Account_No = ?,
+                        DefaultSpecialLeaveDays = ?, LastUpdatedBy = ?
+                    WHERE UserID = ?
+                ");
+                $updateStmt->bind_param("dddssssiii", 
+                    $basicSalary, $salaryPerHour, $fixedAllowance, 
+                    $bankName, $bankAccountNumber, $epfAccountNo, $taxAccountNo, 
+                    $defaultSpecialLeaveDays, $updaterId, $targetUserId
+                );
+            }
             
             if ($updateStmt->execute()) {
+                // Sync to Employee table
+                $syncStmt = $conn->prepare("UPDATE Employee SET BankName = ?, BankAccountNumber = ?, EPFNumber = ? WHERE UserID = ?");
+                $syncStmt->bind_param("sssi", $bankName, $bankAccountNumber, $epfAccountNo, $targetUserId);
+                $syncStmt->execute();
+
                 echo json_encode(['status' => 'success', 'message' => 'Profile updated successfully']);
             } else {
                 $error = $conn->error;
@@ -260,21 +291,41 @@ if ($method == 'GET') {
             }
 
         } else {
-            // Insert
-            $insertStmt = $conn->prepare("
-                INSERT INTO EmployeeSalarySetup (
-                    UserID, BasicSalary, SalaryPerHour, FixedAllowance, 
-                    BankName, BankAccountNumber, EPF_Account_No, Tax_Account_No, 
-                    DefaultSpecialLeaveDays, LastUpdatedBy
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $insertStmt->bind_param("idddssssii", 
-                $targetUserId, $basicSalary, $salaryPerHour, $fixedAllowance, 
-                $bankName, $bankAccountNumber, $epfAccountNo, $taxAccountNo, 
-                $defaultSpecialLeaveDays, $updaterId
-            );
+            // Insert - use different query if updaterId is null
+            if ($updaterId === null) {
+                $insertStmt = $conn->prepare("
+                    INSERT INTO EmployeeSalarySetup (
+                        UserID, BasicSalary, SalaryPerHour, FixedAllowance, 
+                        BankName, BankAccountNumber, EPF_Account_No, Tax_Account_No, 
+                        DefaultSpecialLeaveDays
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $insertStmt->bind_param("idddssssi", 
+                    $targetUserId, $basicSalary, $salaryPerHour, $fixedAllowance, 
+                    $bankName, $bankAccountNumber, $epfAccountNo, $taxAccountNo, 
+                    $defaultSpecialLeaveDays
+                );
+            } else {
+                $insertStmt = $conn->prepare("
+                    INSERT INTO EmployeeSalarySetup (
+                        UserID, BasicSalary, SalaryPerHour, FixedAllowance, 
+                        BankName, BankAccountNumber, EPF_Account_No, Tax_Account_No, 
+                        DefaultSpecialLeaveDays, LastUpdatedBy
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $insertStmt->bind_param("idddssssii", 
+                    $targetUserId, $basicSalary, $salaryPerHour, $fixedAllowance, 
+                    $bankName, $bankAccountNumber, $epfAccountNo, $taxAccountNo, 
+                    $defaultSpecialLeaveDays, $updaterId
+                );
+            }
 
             if ($insertStmt->execute()) {
+                // Sync to Employee table
+                $syncStmt = $conn->prepare("UPDATE Employee SET BankName = ?, BankAccountNumber = ?, EPFNumber = ? WHERE UserID = ?");
+                $syncStmt->bind_param("sssi", $bankName, $bankAccountNumber, $epfAccountNo, $targetUserId);
+                $syncStmt->execute();
+
                 echo json_encode(['status' => 'success', 'message' => 'Profile created successfully']);
             } else {
                 $error = $conn->error;

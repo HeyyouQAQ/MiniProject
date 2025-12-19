@@ -108,7 +108,7 @@ if ($method == 'GET') {
                 if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
                 
                 $stmt->bind_param(
-                    "iiiididdddddiiiiii",
+                    "iiiididdddddiiiiiii",
                     $sc['defaultAnnualLeaveDays'],
                     $sc['defaultSickLeaveDays'],
                     $sc['carryForwardLeaveLimit'],
